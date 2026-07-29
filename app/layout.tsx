@@ -9,6 +9,7 @@ import { RouteChrome } from "@/components/site/route-chrome"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { Analytics } from "@vercel/analytics/next"
 
 const bodyFont = Inter({ subsets: ["latin"], variable: "--font-body-family" })
 const displayFont = Bodoni_Moda({
@@ -51,6 +52,7 @@ export default function RootLayout({
             </TooltipProvider>
           </ThemeProvider>
         </ConvexClientProvider>
+        <Analytics />
       </body>
     </html>
   )
