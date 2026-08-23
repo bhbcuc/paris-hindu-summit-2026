@@ -46,6 +46,7 @@ function getYouTubeEmbedUrl(value: string | null) {
 
 export function MediaPublications() {
   const sections = useQuery(api.media.listPublished)
+  const statements = useQuery(api.statements.listPublished)
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
   const emptyCopy = useEditorialRecord("media-empty", {
     eyebrow:"Editorial archive",
@@ -81,7 +82,7 @@ export function MediaPublications() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [activePhotoIndex, photoItems.length])
 
-  if (sections === undefined) {
+  if (sections === undefined || statements === undefined) {
     return (
       <section className="publication-library section-shell" aria-busy="true">
         <p className="kicker">Loading the public archive</p>
@@ -89,7 +90,7 @@ export function MediaPublications() {
     )
   }
 
-  if (sections.length === 0) {
+  if (sections.length === 0 && statements.length === 0) {
     return (
       <section className="publication-library section-shell">
         <div className="publication-empty">
@@ -105,10 +106,52 @@ export function MediaPublications() {
   return (
     <>
       <section className="publication-library section-shell">
+        <section className="publication-section statements-section" id="statements">
+          <header>
+            <span>01</span>
+            <div>
+              <p className="kicker">Media &amp; Publication</p>
+              <h2>Statements</h2>
+              <p>Official and community statements, press releases, and public notices connected to the Paris Hindu Summit.</p>
+            </div>
+          </header>
+          {statements.length > 0 ? (
+            <div className="statement-list">
+              {statements.map((statement) => (
+                <article key={statement._id}>
+                  <time dateTime={statement.releaseDate}>
+                    {new Intl.DateTimeFormat("en-GB", {
+                      day:"2-digit",
+                      month:"short",
+                      year:"numeric",
+                      timeZone:"UTC",
+                    }).format(new Date(`${statement.releaseDate}T00:00:00Z`))}
+                  </time>
+                  <div>
+                    <p className="kicker">{statement.fileName.split(".").pop()?.toUpperCase() || "FILE"}</p>
+                    <h3>{statement.title}</h3>
+                    {statement.description && <p>{statement.description}</p>}
+                  </div>
+                  <Button
+                    nativeButton={false}
+                    variant="outline"
+                    render={<a href={statement.fileUrl} target="_blank" rel="noreferrer" />}
+                  >
+                    Open file <ArrowDownToLineIcon data-icon="inline-end" />
+                  </Button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="publication-section-empty">
+              No statements have been published yet.
+            </p>
+          )}
+        </section>
         {sections.map((section, sectionIndex) => (
         <section className="publication-section" id={section.slug} key={section._id}>
           <header>
-            <span>{String(sectionIndex + 1).padStart(2, "0")}</span>
+            <span>{String(sectionIndex + 2).padStart(2, "0")}</span>
             <div>
               <p className="kicker">Media &amp; Publication</p>
               <h2>{section.name}</h2>

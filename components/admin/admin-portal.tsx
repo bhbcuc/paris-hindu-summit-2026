@@ -1716,6 +1716,7 @@ function MediaPublicationPanel() {
   return (
     <section className="admin-panel media-publication-admin" data-compact="true">
       <PanelTitle eyebrow="Publication editor" title="Media & Publication" copy="Create publication sections, photo galleries, and YouTube video galleries from one managed archive." />
+      <StatementsEditor />
       <RecordCards
         title="Publication sections"
         copy="These section names become the Media & Publication submenu."
@@ -1821,6 +1822,164 @@ function MediaPublicationPanel() {
         </div>
       </div>
     </section>
+  )
+}
+
+function StatementsEditor() {
+  const rows = useQuery(api.statements.listForAdmin)
+  const assets = useQuery(api.assets.list)
+  const save = useMutation(api.statements.save)
+  const remove = useMutation(api.statements.remove)
+  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
+  const register = useMutation(api.assets.register)
+  const [selected, setSelected] = useState("new")
+  const [uploading, setUploading] = useState(false)
+  const [draft, setDraft] = useState<{
+    slug:string
+    title:string
+    description:string
+    releaseDate:string
+    fileStorageId?:Id<"_storage">
+    order:number
+    status:"draft" | "published"
+  }>({
+    slug:"",
+    title:"",
+    description:"",
+    releaseDate:"",
+    order:50,
+    status:"draft",
+  })
+  const existing = rows?.find((row) => row._id === selected)
+  const statementAssets = assets?.filter((asset) =>
+    [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/png",
+    ].includes(asset.mimeType)
+  )
+
+  useEffect(() => {
+    if (existing) {
+      setDraft({
+        slug:existing.slug,
+        title:existing.title,
+        description:existing.description,
+        releaseDate:existing.releaseDate,
+        fileStorageId:existing.fileStorageId,
+        order:existing.order,
+        status:existing.status,
+      })
+      return
+    }
+    setDraft({
+      slug:"",
+      title:"",
+      description:"",
+      releaseDate:"",
+      order:50,
+      status:"draft",
+    })
+  }, [existing, selected])
+
+  return (
+    <div className="admin-subpanel statements-admin">
+      <PanelTitle
+        eyebrow="Official record"
+        title="Statements"
+        copy="Publish official or community statements, press releases, and public notices. Upload the original file directly. No cover image is required."
+      />
+      <AdminRecordSelect
+        label="Statement to edit"
+        value={selected}
+        createLabel="+ Add a new statement"
+        records={rows?.map((row) => ({ value:row._id, label:row.title })) ?? []}
+        onChange={setSelected}
+      />
+      <div className="admin-form-grid">
+        <Field label="Title" value={draft.title} onValueChange={(title) => setDraft({ ...draft, title })} />
+        <Field label="Statement date" type="date" value={draft.releaseDate} onValueChange={(releaseDate) => setDraft({ ...draft, releaseDate })} />
+        <Field label="URL slug (optional)" value={draft.slug} placeholder="Generated from the title" onValueChange={(slug) => setDraft({ ...draft, slug })} />
+        <Field label="Short description" multiline value={draft.description} onValueChange={(description) => setDraft({ ...draft, description })} />
+        <label className="admin-field">
+          <span>Statement file</span>
+          <select
+            value={draft.fileStorageId ?? ""}
+            onChange={(event) => setDraft({
+              ...draft,
+              fileStorageId:(event.target.value || undefined) as Id<"_storage"> | undefined,
+            })}
+          >
+            <option value="">Choose a file</option>
+            {statementAssets?.map((asset) => (
+              <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>
+            ))}
+          </select>
+        </label>
+        <AdminFileUpload
+          accept=".pdf,.docx,.jpg,.jpeg,.png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
+          title="Upload statement file"
+          description="PDF, DOCX, JPG or PNG · maximum 20 MB"
+          disabled={uploading}
+          onUpload={async (file) => {
+            const extension = file.name.toLowerCase().slice(file.name.lastIndexOf("."))
+            if (![".pdf", ".docx", ".jpg", ".jpeg", ".png"].includes(extension)) {
+              throw new Error("Choose a PDF, DOCX, JPG, or PNG file.")
+            }
+            setUploading(true)
+            try {
+              const storageId = await uploadAdminAsset({
+                file,
+                category:"document",
+                uploadUrl:generateUploadUrl,
+                register,
+              })
+              setDraft((current) => ({ ...current, fileStorageId:storageId }))
+              toast.success("Statement file uploaded and selected.")
+            } finally {
+              setUploading(false)
+            }
+          }}
+        />
+        <Field label="Display order" type="number" value={String(draft.order)} onValueChange={(order) => setDraft({ ...draft, order:Number(order) })} />
+        <label className="admin-field">
+          <span>Publication status</span>
+          <select value={draft.status} onChange={(event) => setDraft({ ...draft, status:event.target.value as "draft" | "published" })}>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+        </label>
+      </div>
+      <div className="admin-editor-actions">
+        <Button onClick={async () => {
+          if (!draft.title.trim()) { toast.error("Enter a statement title."); return }
+          if (!draft.releaseDate) { toast.error("Choose the statement date."); return }
+          if (!draft.fileStorageId) { toast.error("Choose or upload a statement file."); return }
+          try {
+            await save({
+              ...(existing ? { id:existing._id } : {}),
+              slug:draft.slug,
+              title:draft.title,
+              description:draft.description,
+              releaseDate:draft.releaseDate,
+              fileStorageId:draft.fileStorageId,
+              order:draft.order,
+              status:draft.status,
+            })
+            toast.success(draft.status === "published" ? "Statement published." : "Statement saved as a draft.")
+            setSelected("new")
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "The statement could not be saved.")
+          }
+        }}><SaveIcon /> Save statement</Button>
+        {existing && <ConfirmDelete label={existing.title} onConfirm={async () => {
+          await remove({ id:existing._id })
+          setSelected("new")
+          toast.success("Statement removed.")
+        }} />}
+      </div>
+    </div>
   )
 }
 

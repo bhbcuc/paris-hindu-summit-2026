@@ -216,6 +216,8 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Images & Videos uses dedicated photo and YouTube video gallery presentations rather than generic document-download cards.
 - [x] Admin media records can be typed as a publication, gallery photo, or YouTube video, with server-side file and URL validation.
 - [x] Media covers and publication files cannot be deleted while referenced.
+- [x] A fixed Statements submenu lists official and non-official statements, press releases, and public notices in date order.
+- [x] Admin can upload PDF, DOCX, JPG, and PNG statement files without a cover image, then draft, publish, edit, order, or remove each statement.
 
 ### Purpose-built About document editors
 

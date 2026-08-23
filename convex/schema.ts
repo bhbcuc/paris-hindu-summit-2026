@@ -303,6 +303,26 @@ export default defineSchema({
     .index("by_cover_storage_id", ["coverStorageId"])
     .index("by_file_storage_id", ["fileStorageId"]),
 
+  statements: defineTable({
+    slug: v.string(),
+    title: v.string(),
+    description: v.string(),
+    releaseDate: v.string(),
+    fileStorageId: v.id("_storage"),
+    fileName: v.string(),
+    mimeType: v.string(),
+    order: v.number(),
+    status: publicationStatus,
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status_and_release_date_and_order", [
+      "status",
+      "releaseDate",
+      "order",
+    ])
+    .index("by_file_storage_id", ["fileStorageId"]),
+
   donationTiers: defineTable({
     slug: v.string(),
     label: v.string(),

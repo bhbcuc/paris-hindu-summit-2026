@@ -27,6 +27,7 @@ import type * as programme from "../programme.js";
 import type * as programmeData from "../programmeData.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
+import type * as statements from "../statements.js";
 import type * as stripe from "../stripe.js";
 
 import type {
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   programmeData: typeof programmeData;
   seed: typeof seed;
   settings: typeof settings;
+  statements: typeof statements;
   stripe: typeof stripe;
 }>;
 

@@ -111,7 +111,12 @@ export function SiteHeader() {
     ["About", aboutLinks],
     ["Programme", programmeLinks],
     [settings?.forumPackagesMenuLabel || "Forum Packages", [["/forum-packages/accommodation", "Accommodation Package"], ["/forum-packages/partnership-sponsorship", "Partnership & Sponsorship"]]],
-    ["Media & Publication", media?.map((section) => [`/media#${section.slug}`, section.name]) ?? [["/media", "Media & Publication"]]],
+    ["Media & Publication", [
+      ["/media#statements", "Statements"],
+      ...(media
+        ?.filter((section) => section.slug !== "statements")
+        .map((section) => [`/media#${section.slug}`, section.name]) ?? []),
+    ]],
     ["Attend and Support", engage?.map((item) => [item.linkUrl || "/engage", item.title]) ?? [["/engage", "Ways to attend and support"]]],
   ] as const
 
@@ -175,6 +180,7 @@ export function SiteHeader() {
               { href:"/regional",label:"Regional" },
               { href:"/partners",label:"Partners" },
               { href:"/media",label:"Media & Publication" },
+              { href:"/media#statements",label:"Statements" },
               { href:"/engage",label:"Attend and Support" },
               { href:"/faq",label:"FAQ" },
               ...(settings?.registrationOpen !== false ? [{ href: "/participate", label: "Reserve a place" }] : []),
