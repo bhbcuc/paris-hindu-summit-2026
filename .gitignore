@@ -39,3 +39,6 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+/dist/
+.vinext/
+.cloudflare/
