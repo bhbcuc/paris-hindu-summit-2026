@@ -8,8 +8,6 @@ export interface SummitEnv {
   IMAGES: unknown
   ADMIN_API_TOKEN?: string
   MAIL_INGEST_SECRET?: string
-  STRIPE_SECRET_KEY?: string
-  STRIPE_WEBHOOK_SECRET?: string
   BETTER_AUTH_SECRET?: string
   BETTER_AUTH_URL?: string
   ALLOW_INITIAL_ADMIN_SIGNUP?: string

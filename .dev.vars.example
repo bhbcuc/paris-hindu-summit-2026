@@ -1,5 +1,6 @@
 # Local dev secrets (gitignored). Required by cloudflare.config.ts secret() bindings.
 ADMIN_API_TOKEN=""
 MAIL_INGEST_SECRET=""
-STRIPE_SECRET_KEY=""
-STRIPE_WEBHOOK_SECRET=""
+BETTER_AUTH_SECRET=""
+RESEND_API_KEY=""
+ALLOW_INITIAL_ADMIN_SIGNUP=""

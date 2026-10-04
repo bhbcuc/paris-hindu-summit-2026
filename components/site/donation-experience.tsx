@@ -45,7 +45,7 @@ export function DonationExperience() {
         donorName: String(form.get("name")),
         donorEmail: String(form.get("email")),
       })
-      if (response.mode === "stripe" && response.url) window.location.assign(response.url)
+      if (response.url) window.location.assign(response.url)
       else setResult({ reference:response.reference, demo:true })
     } finally { setBusy(false) }
   }

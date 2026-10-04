@@ -1076,7 +1076,7 @@ admin.get("/donation-tiers", async (c) => {
   const { results } = await c.env.DB.prepare(`SELECT * FROM donationTiers ORDER BY status ASC, "order" ASC LIMIT 50`).all<Record<string, unknown>>()
   return c.json(results.map((item) => ({
     _id: item.id, slug: item.slug, label: item.label, amountCents: item.amountCents,
-    description: item.description, stripePriceId: item.stripePriceId,
+    description: item.description,
     customAmount: fromBool(item.customAmount as number), order: item.order, status: item.status,
   })))
 })
@@ -1090,12 +1090,12 @@ admin.post("/donation-tiers/save", async (c) => {
   const timestamp = now()
   const amountCents = body.amountCents === null || body.amountCents === undefined ? null : Math.floor(Number(body.amountCents))
   const existing = await c.env.DB.prepare("SELECT id FROM donationTiers WHERE id = ?").bind(id).first<{ id: string }>()
-  const values = [str(body.slug, 120), str(body.label, 200), Number.isFinite(amountCents) ? amountCents : null, str(body.description, 2000), str(body.stripePriceId, 200) || null, asBool(body.customAmount), Number.isFinite(Number(body.order)) ? Number(body.order) : 0, body.status === "published" ? "published" : "draft", timestamp]
+  const values = [str(body.slug, 120), str(body.label, 200), Number.isFinite(amountCents) ? amountCents : null, str(body.description, 2000), asBool(body.customAmount), Number.isFinite(Number(body.order)) ? Number(body.order) : 0, body.status === "published" ? "published" : "draft", timestamp]
   if (existing) {
-    await c.env.DB.prepare(`UPDATE donationTiers SET slug = ?, label = ?, amountCents = ?, description = ?, stripePriceId = ?, customAmount = ?, "order" = ?, status = ?, updatedAt = ? WHERE id = ?`)
+    await c.env.DB.prepare(`UPDATE donationTiers SET slug = ?, label = ?, amountCents = ?, description = ?, customAmount = ?, "order" = ?, status = ?, updatedAt = ? WHERE id = ?`)
       .bind(...values, id).run()
   } else {
-    await c.env.DB.prepare(`INSERT INTO donationTiers (id, slug, label, amountCents, description, stripePriceId, customAmount, "order", status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    await c.env.DB.prepare(`INSERT INTO donationTiers (id, slug, label, amountCents, description, customAmount, "order", status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(id, ...values).run()
   }
   await audit(c, { action: existing ? "update" : "create", entityType: "donationTier", entityId: id, summary: `Saved ${str(body.label, 200)}` })

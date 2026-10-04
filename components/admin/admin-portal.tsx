@@ -2678,8 +2678,7 @@ function TierEditor({ tier, onSave }: { tier:any; onSave:(args:any)=>Promise<any
     <Field label="Tier label" value={draft.label} onValueChange={(value) => setDraft({ ...draft, label:value })} />
     {!draft.customAmount && <Field label="Euro amount" type="number" value={String((draft.amountCents ?? 0)/100)} onValueChange={(value) => setDraft({ ...draft, amountCents:Math.round(Number(value)*100) })} />}
     <Field label="Description" value={draft.description} multiline onValueChange={(value) => setDraft({ ...draft, description:value })} />
-    <Field label="Stripe price ID (optional)" value={draft.stripePriceId ?? ""} onValueChange={(value) => setDraft({ ...draft, stripePriceId:value || undefined })} />
-    <Button variant="outline" onClick={async () => { const { _creationTime, updatedAt, ...value } = draft; void _creationTime; void updatedAt; await onSave({ ...value, id:tier._id }); toast.success(`${draft.label} updated.`) }}><SaveIcon /> Save tier</Button>
+    <Button variant="outline" onClick={async () => { const { _creationTime, updatedAt, stripePriceId, ...value } = draft; void _creationTime; void updatedAt; void stripePriceId; await onSave({ ...value, id:tier._id }); toast.success(`${draft.label} updated.`) }}><SaveIcon /> Save tier</Button>
   </article>
 }
 

@@ -745,7 +745,7 @@ api.post("/mail/delivery", async (c) => {
   return c.json(results)
 })
 
-// --- Donations checkout (mirror convex/stripe) ---
+// --- Donation intentions (bank transfer only; online payments removed) ---
 
 api.post("/donations/checkout", async (c) => {
   let body: Record<string, unknown>
@@ -755,7 +755,7 @@ api.post("/donations/checkout", async (c) => {
     return c.json({ error: "Invalid request." }, 400)
   }
   const tier = await c.env.DB.prepare(
-    "SELECT label, amountCents, description, customAmount, stripePriceId FROM donationTiers WHERE id = ? AND status = 'published'"
+    "SELECT label, amountCents, description, customAmount FROM donationTiers WHERE id = ? AND status = 'published'"
   )
     .bind(str(body.tierId, 100))
     .first<{
@@ -763,7 +763,6 @@ api.post("/donations/checkout", async (c) => {
       amountCents: number | null
       description: string
       customAmount: number
-      stripePriceId: string | null
     }>()
   if (!tier) return c.json({ error: "Donation tier is unavailable." }, 400)
   const customCents =
@@ -773,85 +772,21 @@ api.post("/donations/checkout", async (c) => {
     return c.json({ error: "Donation amount must be between €5 and €100,000." }, 400)
   }
   const reference = `DON-${Date.now().toString(36).toUpperCase()}`
-  const donorName = str(body.donorName, 120)
-  const donorEmail = str(body.donorEmail, 240).toLowerCase()
-  const secret = c.env.STRIPE_SECRET_KEY
   const timestamp = now()
-  if (!secret) {
-    await c.env.DB.prepare(
-      "INSERT INTO donations (id, reference, donorName, donorEmail, amountCents, currency, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'eur', 'demo', ?, ?)"
-    )
-      .bind(newId(), reference, donorName, donorEmail, amountCents, timestamp, timestamp)
-      .run()
-    return c.json({ mode: "demo", url: null, reference })
-  }
-  const { default: Stripe } = await import("stripe")
-  const stripe = new Stripe(secret, { httpClient: Stripe.createFetchHttpClient() })
-  const siteUrl = c.req.header("origin") ?? "https://parishindusummit.org"
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: donorEmail || undefined,
-    client_reference_id: reference,
-    success_url: `${siteUrl}/donate?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/donate?status=cancelled`,
-    metadata: { reference },
-    line_items: tier.stripePriceId
-      ? [{ price: tier.stripePriceId, quantity: 1 }]
-      : [
-          {
-            quantity: 1,
-            price_data: {
-              currency: "eur",
-              unit_amount: amountCents,
-              product_data: { name: tier.label, description: tier.description },
-            },
-          },
-        ],
-  })
   await c.env.DB.prepare(
-    "INSERT INTO donations (id, reference, donorName, donorEmail, amountCents, currency, status, stripeSessionId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'eur', 'pending', ?, ?, ?)"
+    "INSERT INTO donations (id, reference, donorName, donorEmail, amountCents, currency, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'eur', 'pending', ?, ?)"
   )
-    .bind(newId(), reference, donorName, donorEmail, amountCents, session.id, timestamp, timestamp)
-    .run()
-  return c.json({ mode: "stripe", url: session.url, reference })
-})
-
-api.post("/donations/webhook", async (c) => {
-  const secret = c.env.STRIPE_SECRET_KEY
-  const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET
-  if (!secret || !webhookSecret) {
-    return c.json({ error: "Stripe is not configured." }, 503)
-  }
-  const { default: Stripe } = await import("stripe")
-  const stripe = new Stripe(secret, { httpClient: Stripe.createFetchHttpClient() })
-  const signature = c.req.header("stripe-signature") ?? ""
-  let event: { type: string; data: { object: Record<string, unknown> } }
-  try {
-    event = stripe.webhooks.constructEvent(
-      await c.req.text(),
-      signature,
-      webhookSecret
-    ) as unknown as typeof event
-  } catch {
-    return c.json({ error: "Invalid signature." }, 400)
-  }
-  const session = event.data.object as { id?: string; payment_intent?: string }
-  const status =
-    event.type === "checkout.session.completed"
-      ? "paid"
-      : event.type === "checkout.session.expired"
-        ? "expired"
-        : event.type === "checkout.session.async_payment_failed"
-          ? "failed"
-          : null
-  if (status && session.id) {
-    await c.env.DB.prepare(
-      "UPDATE donations SET status = ?, stripePaymentIntentId = COALESCE(?, stripePaymentIntentId), updatedAt = ? WHERE stripeSessionId = ?"
+    .bind(
+      newId(),
+      reference,
+      str(body.donorName, 120),
+      str(body.donorEmail, 240).toLowerCase(),
+      amountCents,
+      timestamp,
+      timestamp
     )
-      .bind(status, typeof session.payment_intent === "string" ? session.payment_intent : null, now(), session.id)
-      .run()
-  }
-  return c.json({ received: true })
+    .run()
+  return c.json({ mode: "bank-transfer", url: null, reference })
 })
 
 // --- Admin mutations (gated by ADMIN_API_TOKEN) ---

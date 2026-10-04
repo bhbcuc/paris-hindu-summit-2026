@@ -489,7 +489,6 @@ export interface AdminTier {
   label: string
   amountCents: number | null
   description: string
-  stripePriceId: string | null
   customAmount: boolean
   order: number
   status: string
