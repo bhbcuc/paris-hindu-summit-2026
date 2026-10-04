@@ -1,12 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useQuery } from "convex/react"
 
-import { api } from "@/convex/_generated/api"
+import { useApi } from "@/lib/api"
 
 export function Countdown() {
-  const settings = useQuery(api.settings.get)
+  const settings = useApi("/settings")
   const [remaining, setRemaining] = useState({ days: "00", hours: "00", minutes: "00" })
 
   useEffect(() => {

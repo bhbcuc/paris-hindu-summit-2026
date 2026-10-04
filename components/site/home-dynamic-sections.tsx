@@ -1,17 +1,16 @@
 "use client"
 
-import { useQuery } from "convex/react"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRightIcon } from "lucide-react"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { useApi } from "@/lib/api"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
 import { Reveal } from "@/components/site/reveal"
 
 export function HomeInfoBar() {
-  const settings = useQuery(api.settings.get)
+  const settings = useApi("/settings")
   const labels = useEditorialRecord("home-info-labels", {
     title:"Venue",
     summary:"Format",
@@ -28,7 +27,7 @@ export function HomeInfoBar() {
 }
 
 export function EvidenceStats() {
-  const entries = useQuery(api.cms.listPublished, { category: "sectionCopy" })
+  const entries = useApi("/cms/published", { category: "sectionCopy" })
   const stats = (entries ?? []).filter(
     (entry) =>
       entry.slug.startsWith("home-evidence-") &&
@@ -48,7 +47,7 @@ export function EvidenceStats() {
 }
 
 export function EvidenceCharts() {
-  const series = useQuery(api.charts.listPublished)
+  const series = useApi("/charts")
   return (
     <section className="evidence-charts section-shell" id="evidence-charts">
       {series?.map((chart, index) => {
@@ -112,7 +111,7 @@ export function EvidenceCharts() {
 }
 
 export function FeaturedSpeakers() {
-  const managedSpeakers = useQuery(api.cms.listPublished, { category: "speaker" })
+  const managedSpeakers = useApi("/cms/published", { category: "speaker" })
   const heading = useEditorialRecord("home-speakers-heading", {
     eyebrow:"Voices in the room",
     title:"People carrying evidence into action.",

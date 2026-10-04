@@ -29,7 +29,8 @@
     "**/*.tsx",
     "**/*.mts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".cloudflare/types/index.d.ts"
   ],
   "exclude": ["node_modules", "cloudflare", "apps/mail-desk"]
 }

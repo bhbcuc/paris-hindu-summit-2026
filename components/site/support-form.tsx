@@ -1,11 +1,10 @@
 "use client"
 
-import { useMutation } from "convex/react"
 import { CheckCircle2Icon, Loader2Icon, SendIcon } from "lucide-react"
 import { FormEvent, useState } from "react"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { apiPost } from "@/lib/api"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -20,7 +19,8 @@ const pathways = [
 ] as const
 
 export function SupportForm() {
-  const submit = useMutation(api.forms.submit)
+  const submit = (args: Record<string, unknown>) =>
+    apiPost<{ accepted: boolean; reference: string }>("/submissions", args)
   const [type, setType] = useState<(typeof pathways)[number][0]>("support")
   const [busy, setBusy] = useState(false)
   const [reference, setReference] = useState("")

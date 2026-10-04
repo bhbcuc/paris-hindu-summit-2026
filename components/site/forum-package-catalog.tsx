@@ -1,11 +1,10 @@
 "use client"
 
-import { useQuery } from "convex/react"
 import Link from "next/link"
 import { ArrowRightIcon, CheckIcon, XIcon } from "lucide-react"
 
-import { api } from "@/convex/_generated/api"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
+import { useApi } from "@/lib/api"
 
 type Catalogue = "accommodation" | "sponsorship"
 
@@ -25,8 +24,8 @@ const copy = {
 } as const
 
 export function ForumPackageCatalog({ catalogue }: { catalogue:Catalogue }) {
-  const entries = useQuery(api.cms.listPublished, { category:"forumPackage" })
-  const settings = useQuery(api.settings.get)
+  const entries = useApi("/cms/published", { category: "forumPackage" })
+  const settings = useApi("/settings")
   const packages = entries?.filter((entry) => entry.parentSlug === catalogue)
   const text = copy[catalogue]
   const eyebrow = catalogue === "accommodation" ? settings?.accommodationPackageLabel : settings?.sponsorshipPackageLabel

@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { useQuery } from "convex/react"
 import {
   ArrowDownToLineIcon,
   BookOpenIcon,
@@ -13,8 +12,8 @@ import {
   PlayIcon,
 } from "lucide-react"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { useApi } from "@/lib/api"
 import {
   Dialog,
   DialogContent,
@@ -45,8 +44,8 @@ function getYouTubeEmbedUrl(value: string | null) {
 }
 
 export function MediaPublications() {
-  const sections = useQuery(api.media.listPublished)
-  const statements = useQuery(api.statements.listPublished)
+  const sections = useApi("/media")
+  const statements = useApi("/statements")
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
   const emptyCopy = useEditorialRecord("media-empty", {
     eyebrow:"Editorial archive",

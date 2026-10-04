@@ -1,13 +1,11 @@
 "use client"
 
-import { useQuery } from "convex/react"
-
-import { api } from "@/convex/_generated/api"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
+import { useApi } from "@/lib/api"
 
 export function LegalPage({ slug }: { slug: string }) {
-  const entries = useQuery(api.cms.listPublished, { category: "legal" })
+  const entries = useApi("/cms/published", { category: "legal" })
   const draftNote = useEditorialRecord("legal-draft-note", {
     title:"This is a working draft and requires organiser/legal approval before public launch.",
   })

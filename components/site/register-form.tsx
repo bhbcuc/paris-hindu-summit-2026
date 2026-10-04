@@ -1,12 +1,11 @@
 "use client"
 
-import { useMutation } from "convex/react"
 import { CheckIcon, Loader2Icon, SendIcon } from "lucide-react"
 import { FormEvent, useState } from "react"
 import { toast } from "@/components/motion/animated-toast-provider"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { apiPost } from "@/lib/api"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet, FieldLegend } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -17,7 +16,8 @@ import { useEditorialRecord } from "@/components/site/managed-editorial"
 const attendanceOptions = ["Survivor", "Delegate", "Audience", "Researcher-Speaker"] as const
 
 export function RegisterForm({ enabled = true }: { enabled?: boolean }) {
-  const submit = useMutation(api.forms.submit)
+  const submit = (args: Record<string, unknown>) =>
+    apiPost<{ accepted: boolean; reference: string }>("/submissions", args)
   const [reference, setReference] = useState("")
   const [attendance, setAttendance] = useState<(typeof attendanceOptions)[number]>("Delegate")
   const [consent, setConsent] = useState(false)

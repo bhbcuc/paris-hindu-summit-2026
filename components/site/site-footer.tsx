@@ -3,17 +3,16 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRightIcon, MailIcon, MapPinIcon, MessageCircleIcon, PhoneIcon } from "lucide-react"
-import { useQuery } from "convex/react"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { useApi } from "@/lib/api"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
 import { Separator } from "@/components/ui/separator"
 import { SocialIcon } from "@/components/site/social-icon"
 import { event, navItems } from "@/lib/content"
 
 export function SiteFooter() {
-  const settings = useQuery(api.settings.get)
+  const settings = useApi("/settings")
   const callout = useEditorialRecord("global-footer-callout", {
     eyebrow:"Paris · October 2026",
     title:"One room. Many institutions. A shared commitment.",

@@ -1,9 +1,7 @@
 "use client"
 
-import { useQuery } from "convex/react"
-
-import { api } from "@/convex/_generated/api"
 import { BankAccountCards } from "@/components/site/bank-account-cards"
+import { useApi } from "@/lib/api"
 import { ManagedText } from "@/components/site/managed-editorial"
 import { ManagedPageHero } from "@/components/site/managed-page-hero"
 import { RegisterForm } from "@/components/site/register-form"
@@ -13,7 +11,7 @@ import { formatEventDateRange } from "@/lib/event-format"
 import { MailIcon } from "lucide-react"
 
 export default function ParticipatePage() {
-  const settings = useQuery(api.settings.get)
+  const settings = useApi("/settings")
   const registrationOpen = settings?.registrationOpen !== false
   const eventDates = formatEventDateRange(
     settings?.eventStartIso,

@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import { useQuery } from "convex/react"
 import { useState } from "react"
 import {
   ArrowRightIcon,
@@ -16,13 +15,13 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-import { api } from "@/convex/_generated/api"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
 import { ManagedPageHero } from "@/components/site/managed-page-hero"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
 import { Reveal } from "@/components/site/reveal"
+import { useApi } from "@/lib/api"
 
 type DocumentCategory =
   | "agenda"
@@ -31,7 +30,7 @@ type DocumentCategory =
   | "partnership"
 
 export function ManagedOverview() {
-  const entries = useQuery(api.cms.listPublished, { category: "overview" })
+  const entries = useApi("/cms/published", { category: "overview" })
   if (!entries?.length) return null
   return (
     <section className="managed-overview section-shell">
@@ -54,7 +53,7 @@ export function ManagedOverview() {
 }
 
 export function PresentMoment() {
-  const entries = useQuery(api.cms.listPublished, { category:"presentMoment" })
+  const entries = useApi("/cms/published", { category: "presentMoment" })
   const heading = useEditorialRecord("about-present-moment-heading", {
     eyebrow:"The present moment",
     title:"Fifty-six years after independence, structural and everyday pressures still shape daily life for Bangladesh's Hindu community.",
@@ -148,7 +147,7 @@ function ExpandableBio({ bio }: { bio?: string }) {
 }
 
 export function ManagedCommittee() {
-  const managedTeam = useQuery(api.cms.listPublished, { category: "team" })
+  const managedTeam = useApi("/cms/published", { category: "team" })
   const team = managedTeam ?? []
   const teamHeading = useEditorialRecord("committee-team-heading", {
     eyebrow:"Organising Committee",
@@ -185,7 +184,7 @@ export function ManagedCommittee() {
 }
 
 export function ManagedAdvisoryBoard() {
-  const advisors = useQuery(api.cms.listPublished, { category: "advisory" })
+  const advisors = useApi("/cms/published", { category: "advisory" })
   const advisoryHeading = useEditorialRecord("committee-advisory-heading", {
     eyebrow:"Strategic guidance",
     title:"Advisory Board",
@@ -223,7 +222,7 @@ export function ManagedAdvisoryBoard() {
 }
 
 export function ManagedSpeakers() {
-  const managed = useQuery(api.cms.listPublished, { category: "speaker" })
+  const managed = useApi("/cms/published", { category: "speaker" })
   const speakers = (managed ?? []).map((speaker) => ({
           key: speaker._id,
           name: speaker.title,
@@ -269,7 +268,7 @@ export function CmsDocumentPage({
   title:string
   intro:string
 }) {
-  const entries = useQuery(api.cms.listPublished, { category })
+  const entries = useApi("/cms/published", { category })
   const records = entries ?? []
   const strategyVision = category === "strategy"
     ? records.find((entry) => entry.parentSlug === "vision")

@@ -1,12 +1,11 @@
 "use client"
 
 import { useMemo } from "react"
-import { useQuery } from "convex/react"
 import { RadioIcon } from "lucide-react"
 
 import FlipClock from "@/components/8starlabs-ui/flip-clock"
-import { api } from "@/convex/_generated/api"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
+import { useApi } from "@/lib/api"
 
 const FALLBACK_START = "2026-10-03T08:30:00+02:00"
 
@@ -16,7 +15,7 @@ function validDate(value: string | undefined) {
 }
 
 export function HeroCountdown() {
-  const settings = useQuery(api.settings.get)
+  const settings = useApi("/settings")
   const copy = useEditorialRecord("home-hero-countdown", {
     eyebrow:"Paris opens in",
     title:"Make the time count.",

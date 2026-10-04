@@ -1,8 +1,6 @@
 "use client"
 
-import { useQuery } from "convex/react"
-
-import { api } from "@/convex/_generated/api"
+import { useApi } from "@/lib/api"
 
 type EditorialField =
   | "title"
@@ -21,7 +19,7 @@ export function useEditorialRecord(
   slug:string,
   fallback:EditorialFallback = {}
 ) {
-  const entries = useQuery(api.cms.listPublished, { category:"sectionCopy" })
+  const entries = useApi("/cms/published", { category: "sectionCopy" })
   const entry = entries?.find((item) => item.slug === slug)
   return {
     isLoading:entries === undefined,

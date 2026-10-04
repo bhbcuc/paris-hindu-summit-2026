@@ -1,12 +1,10 @@
 "use client"
 
-import { useAction, useQuery } from "convex/react"
 import { CheckCircle2Icon, HeartHandshakeIcon, LandmarkIcon, Loader2Icon, LockKeyholeIcon } from "lucide-react"
 import { FormEvent, useState } from "react"
 
-import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
 import { BankAccountCards } from "@/components/site/bank-account-cards"
+import { apiPost, useApi } from "@/lib/api"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,10 +12,11 @@ import { useEditorialRecord } from "@/components/site/managed-editorial"
 import { Reveal } from "@/components/site/reveal"
 
 export function DonationExperience() {
-  const tiers = useQuery(api.donations.listTiers)
-  const settings = useQuery(api.settings.get)
-  const checkout = useAction(api.stripe.createCheckout)
-  const [selected, setSelected] = useState<Id<"donationTiers"> | null>(null)
+  const tiers = useApi("/donation-tiers")
+  const settings = useApi("/settings")
+  const checkout = (args: Record<string, unknown>) =>
+    apiPost<{ mode: string; url: string | null; reference: string }>("/donations/checkout", args)
+  const [selected, setSelected] = useState<string | null>(null)
   const [custom, setCustom] = useState("75")
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ reference:string; demo:boolean } | null>(null)

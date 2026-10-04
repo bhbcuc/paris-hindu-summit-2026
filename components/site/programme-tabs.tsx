@@ -1,13 +1,11 @@
 "use client"
 
-import { useQuery } from "convex/react"
-
-import { api } from "@/convex/_generated/api"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useApi } from "@/lib/api"
 
 export function ProgrammeTabs() {
-  const days = useQuery(api.programme.listPublished)
+  const days = useApi("/programme")
   if (days === undefined) return <ContentListSkeleton cards={2} />
   if (days.length === 0) return <p>No programme days are currently published.</p>
   return (

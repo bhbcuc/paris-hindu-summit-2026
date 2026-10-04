@@ -31,6 +31,10 @@ export default defineConfig({
       SUMMIT_ASSETS: bindings.r2({
         name: "summit-assets",
       }),
+      ADMIN_API_TOKEN: bindings.secret(),
+      MAIL_INGEST_SECRET: bindings.secret(),
+      STRIPE_SECRET_KEY: bindings.secret(),
+      STRIPE_WEBHOOK_SECRET: bindings.secret(),
     },
   }),
 });

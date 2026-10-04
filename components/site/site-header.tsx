@@ -5,10 +5,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { MenuIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useQuery } from "convex/react"
 
-import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { useApi } from "@/lib/api"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
 import { ThemeToggle } from "@/components/site/theme-toggle"
 import {
@@ -60,10 +59,10 @@ function Brand({
 export function SiteHeader() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const settings = useQuery(api.settings.get)
-  const programme = useQuery(api.programme.listPublished)
-  const engage = useQuery(api.cms.listPublished, { category: "engage" })
-  const media = useQuery(api.media.listPublished)
+  const settings = useApi("/settings")
+  const programme = useApi("/programme")
+  const engage = useApi("/cms/published", { category: "engage" })
+  const media = useApi("/media")
   const brandCopy = useEditorialRecord("global-brand", {
     title:"Global Forum on Religious Freedom and Hindu Minority Rights",
   })

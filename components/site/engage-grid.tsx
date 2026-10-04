@@ -1,14 +1,13 @@
 "use client"
 
-import { useQuery } from "convex/react"
 import { ArrowUpRightIcon } from "lucide-react"
 
-import { api } from "@/convex/_generated/api"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
 import { Reveal } from "@/components/site/reveal"
+import { useApi } from "@/lib/api"
 
 export function EngageGrid() {
-  const entries = useQuery(api.cms.listPublished, { category:"engage" })
+  const entries = useApi("/cms/published", { category: "engage" })
   if (entries === undefined) {
     return <section className="engage-grid section-shell"><ContentListSkeleton /></section>
   }

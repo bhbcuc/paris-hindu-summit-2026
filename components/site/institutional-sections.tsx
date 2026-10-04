@@ -2,14 +2,13 @@
 
 import Image from "next/image"
 import { ArrowUpRightIcon } from "lucide-react"
-import { useQuery } from "convex/react"
 
-import { api } from "@/convex/_generated/api"
 import { useEditorialRecord } from "@/components/site/managed-editorial"
+import { useApi } from "@/lib/api"
 import { resolveOrganizationRole } from "@/lib/organization-compat"
 
 export function PartnerWall() {
-  const liveOrganizations = useQuery(api.content.listOrganizations)
+  const liveOrganizations = useApi("/organizations")
   const organizerCopy = useEditorialRecord("main-organizer", {
     eyebrow:"Organizing organization",
     title:"Bureau of Human Rights and Justice",
@@ -177,7 +176,7 @@ function OrganizationFeature({
 }
 
 export function RegionalSection({ showIntro = true }: { showIntro?: boolean }) {
-  const liveCountries = useQuery(api.content.listRegionalCountries)
+  const liveCountries = useApi("/regional")
   const countries = liveCountries ?? []
   const heading = useEditorialRecord("regional-heading", {
     eyebrow:"Beyond Bangladesh · regional forum",

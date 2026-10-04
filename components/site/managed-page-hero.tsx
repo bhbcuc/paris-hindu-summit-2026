@@ -1,9 +1,7 @@
 "use client"
 
-import { useQuery } from "convex/react"
-
-import { api } from "@/convex/_generated/api"
 import { PageHero } from "@/components/site/page-hero"
+import { useApi } from "@/lib/api"
 
 export function ManagedPageHero({
   slug,
@@ -18,7 +16,7 @@ export function ManagedPageHero({
   intro:string
   image?:string
 }) {
-  const entries = useQuery(api.cms.listPublished, { category:"pageCopy" })
+  const entries = useApi("/cms/published", { category: "pageCopy" })
   const page = entries?.find((entry) => entry.slug === slug)
 
   return (

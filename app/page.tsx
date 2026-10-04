@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useQuery } from "convex/react"
 import {
   ArrowRightIcon,
   CalendarDaysIcon,
@@ -12,7 +11,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { TextReveal } from "@/components/motion/text-reveal"
-import { api } from "@/convex/_generated/api"
+import { useApi } from "@/lib/api"
 import { Countdown } from "@/components/site/countdown"
 import { HeroCountdown } from "@/components/site/hero-countdown"
 import { HomeBannerCarousel } from "@/components/site/home-banner-carousel"
@@ -32,13 +31,13 @@ import { event } from "@/lib/content"
 import { formatEventDateRange } from "@/lib/event-format"
 
 export default function HomePage() {
-  const settings = useQuery(api.settings.get)
-  const programme = useQuery(api.programme.listPublished)
-  const charts = useQuery(api.charts.listPublished)
-  const speakers = useQuery(api.cms.listPublished, { category:"speaker" })
-  const banners = useQuery(api.banners.listPublished)
-  const organizations = useQuery(api.content.listOrganizations)
-  const countries = useQuery(api.content.listRegionalCountries)
+  const settings = useApi("/settings")
+  const programme = useApi("/programme")
+  const charts = useApi("/charts")
+  const speakers = useApi("/cms/published", { category: "speaker" })
+  const banners = useApi("/banners")
+  const organizations = useApi("/organizations")
+  const countries = useApi("/regional")
   const heroActions = useEditorialRecord("home-hero-actions", {
     title:"Reserve a place",
     secondaryText:"View programme schedule",

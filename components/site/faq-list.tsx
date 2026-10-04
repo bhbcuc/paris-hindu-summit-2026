@@ -1,13 +1,12 @@
 "use client"
 
-import { useQuery } from "convex/react"
 import { ChevronDownIcon } from "lucide-react"
 
-import { api } from "@/convex/_generated/api"
 import { ContentListSkeleton } from "@/components/site/content-list-skeleton"
+import { useApi } from "@/lib/api"
 
 export function FaqList() {
-  const entries = useQuery(api.cms.listPublished, { category: "faq" })
+  const entries = useApi("/cms/published", { category: "faq" })
   if (entries === undefined) {
     return <section className="faq-list section-shell"><ContentListSkeleton /></section>
   }
