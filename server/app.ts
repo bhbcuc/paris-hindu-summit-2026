@@ -1,5 +1,7 @@
 import { Hono } from "hono"
 
+import admin from "./admin"
+import { adminIdentity } from "./auth"
 import {
   ALLOWED_UPLOAD_MIME,
   MAX_UPLOAD_BYTES,
@@ -44,23 +46,19 @@ async function requireAdmin(c: {
   env: SummitEnv
   set: (key: "adminEmail", value: string) => void
 }) {
+  // Service path: shared token (Expo/mobile service callers, scripts).
   const configured = c.env.ADMIN_API_TOKEN
-  if (!configured) {
-    return Response.json(
-      {
-        error:
-          "Admin API token is not configured. Set ADMIN_API_TOKEN (wrangler secret / cf secret) to enable admin mutations.",
-      },
-      { status: 503 }
-    )
-  }
   const header =
     c.req.headers.get("authorization") ?? c.req.headers.get("x-admin-token") ?? ""
   const supplied = header.startsWith("Bearer ") ? header.slice(7) : header
-  if (!supplied || !timingSafeEqual(supplied, configured)) {
-    return Response.json({ error: "Admin access is required." }, { status: 403 })
+  if (configured && supplied && timingSafeEqual(supplied, configured)) {
+    c.set("adminEmail", "api-token-admin")
+    return null
   }
-  c.set("adminEmail", "api-token-admin")
+  // Browser path: better-auth session cookie.
+  const identity = await adminIdentity(c.env, c.req)
+  if (identity instanceof Response) return identity
+  c.set("adminEmail", identity.user.email)
   return null
 }
 
@@ -151,6 +149,8 @@ api.get("/settings", async (c) => {
     sponsorshipPackageIntro: settings.sponsorshipPackageIntro ?? forumPackageDefaults.sponsorshipPackageIntro,
     logoUrl: fileUrl(logoR2Key as string | null),
     faviconUrl: fileUrl(faviconR2Key as string | null),
+    logoStorageId: (logoR2Key as string | null) ?? null,
+    faviconStorageId: (faviconR2Key as string | null) ?? null,
   })
 })
 
@@ -960,5 +960,7 @@ api.delete("/admin/cms/:id", async (c) => {
   })
   return c.json({ deleted: true })
 })
+
+api.route("/admin", admin)
 
 export default api

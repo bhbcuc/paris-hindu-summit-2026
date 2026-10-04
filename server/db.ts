@@ -10,6 +10,10 @@ export interface SummitEnv {
   MAIL_INGEST_SECRET?: string
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
+  BETTER_AUTH_SECRET?: string
+  BETTER_AUTH_URL?: string
+  ALLOW_INITIAL_ADMIN_SIGNUP?: string
+  RESEND_API_KEY?: string
 }
 
 export type AppContext = Context<{ Bindings: SummitEnv }>

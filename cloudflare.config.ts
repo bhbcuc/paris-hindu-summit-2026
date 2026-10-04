@@ -35,6 +35,9 @@ export default defineConfig({
       MAIL_INGEST_SECRET: bindings.secret(),
       STRIPE_SECRET_KEY: bindings.secret(),
       STRIPE_WEBHOOK_SECRET: bindings.secret(),
+      BETTER_AUTH_SECRET: bindings.secret(),
+      RESEND_API_KEY: bindings.secret(),
+      ALLOW_INITIAL_ADMIN_SIGNUP: bindings.secret(),
     },
   }),
 });

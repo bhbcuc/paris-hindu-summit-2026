@@ -1,7 +1,7 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, @next/next/no-img-element */
 
-import { useMutation, useQuery } from "convex/react"
+import { apiAdminDelete, apiAdminPost, useAdminApi, useApi } from "@/lib/api"
 import {
   ArchiveIcon,
   BarChart3Icon,
@@ -43,8 +43,6 @@ import {
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "@/components/motion/animated-toast-provider"
 
-import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
 import { authClient } from "@/lib/auth-client"
 import { ensureLeadershipRecords, isLegacyOrganizationRoleError, omitOrganizationRole, resolveOrganizationRole } from "@/lib/organization-compat"
 import { prepareAdminRecordSave } from "@/lib/admin-record"
@@ -145,8 +143,8 @@ type ContentDraft = Omit<typeof blankContent, "status"> & {
 }
 
 function AuthGate() {
-  const access = useQuery(api.admin.getAccessState)
-  const bootstrap = useMutation(api.admin.bootstrapFirstAdmin)
+  const access = useAdminApi('/access')
+  const bootstrap = () => apiAdminPost('/bootstrap', {})
   const [mode, setMode] = useState<"signin" | "signup">("signin")
   const [busy, setBusy] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -460,19 +458,17 @@ function StudioInspector({ page, publishSignal, onSaved }: { page:StudioPage; pu
 
 type HomeBannerDraft = {
   title: string
-  imageStorageId?: Id<"_storage">
+  imageStorageId?: string
   altText: string
   order: number
   status: "draft" | "published"
 }
 
 function HomeBannersEditor({ onSaved }: { onSaved: () => void }) {
-  const rows = useQuery(api.banners.listForAdmin)
-  const assets = useQuery(api.assets.list)
-  const save = useMutation(api.banners.save)
-  const remove = useMutation(api.banners.remove)
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
+  const rows = useAdminApi('/banners')
+  const assets = useAdminApi('/assets')
+  const save = (args: any) => apiAdminPost('/banners/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/banners', args.id)
   const [selected, setSelected] = useState<string>("new")
   const [uploading, setUploading] = useState(false)
   const [draft, setDraft] = useState<HomeBannerDraft>({
@@ -569,7 +565,7 @@ function HomeBannersEditor({ onSaved }: { onSaved: () => void }) {
               value={draft.imageStorageId ?? ""}
               onChange={(event) => {
                 const storageId = (event.target.value || undefined) as
-                  | Id<"_storage">
+                  | string
                   | undefined
                 const asset = imageAssets?.find(
                   (item) => item.storageId === storageId
@@ -625,8 +621,6 @@ function HomeBannersEditor({ onSaved }: { onSaved: () => void }) {
                 const storageId = await uploadAdminAsset({
                   file,
                   category: "media",
-                  uploadUrl: generateUploadUrl,
-                  register,
                 })
                 const plainName = file.name.replace(/\.[^.]+$/, "").trim()
                 setDraft((current) => ({
@@ -695,9 +689,9 @@ function HomeBannersEditor({ onSaved }: { onSaved: () => void }) {
 }
 
 function EvidenceStatsEditor({ onSaved }: { onSaved:()=>void }) {
-  const entries = useQuery(api.cms.listForAdmin, { category: "sectionCopy" })
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
+  const entries = useAdminApi('/cms', { category: "sectionCopy" })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
   const stats = entries?.filter(
     (entry) =>
       entry.slug.startsWith("home-evidence-") &&
@@ -830,10 +824,10 @@ function EvidenceStatsEditor({ onSaved }: { onSaved:()=>void }) {
 }
 
 function TeamAccessPanel({ canManage }: { canManage:boolean }) {
-  const members = useQuery(api.admin.listTeamMembers)
-  const provision = useMutation(api.admin.provisionTeamMember)
-  const changeRole = useMutation(api.admin.changeAdminRole)
-  const setStatus = useMutation(api.admin.setTeamMemberStatus)
+  const members = useAdminApi('/team')
+  const provision = (args: any) => apiAdminPost('/team/provision', args)
+  const changeRole = (args: any) => apiAdminPost('/team/role', args)
+  const setStatus = (args: any) => apiAdminPost('/team/status', args)
   const [busy, setBusy] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -973,7 +967,7 @@ function TeamAccessPanel({ canManage }: { canManage:boolean }) {
 }
 
 function Dashboard() {
-  const data = useQuery(api.admin.getDashboard)
+  const data = useAdminApi('/dashboard')
   if (!data) return <PanelLoading />
   const stats = [
     ["Content records", data.content, BlocksIcon],
@@ -1001,12 +995,10 @@ function Dashboard() {
 }
 
 function SettingsPanel({ compact = false, focus, publishSignal = 0, onSaved }: { compact?:boolean; focus?:"home"; publishSignal?:number; onSaved?:()=>void }) {
-  const settings = useQuery(api.settings.get)
-  const assets = useQuery(api.assets.list)
-  const save = useMutation(api.settings.save)
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
-  const [draft, setDraft] = useState<Record<string, string | boolean | Id<"_storage"> | undefined> | null>(null)
+  const settings = useApi("/settings")
+  const assets = useAdminApi('/assets')
+  const save = (args: any) => apiAdminPost('/settings/save', args)
+  const [draft, setDraft] = useState<Record<string, string | boolean | string | undefined> | null>(null)
   const [assetBusy, setAssetBusy] = useState<"logoStorageId" | "faviconStorageId" | null>(null)
   const lastPublishSignal = useRef(0)
   useEffect(() => {
@@ -1086,7 +1078,7 @@ function SettingsPanel({ compact = false, focus, publishSignal = 0, onSaved }: {
                         setDraft({
                           ...draft,
                           [key]: event.target.value
-                            ? (event.target.value as Id<"_storage">)
+                            ? (event.target.value as string)
                             : undefined,
                         })
                       }
@@ -1119,8 +1111,6 @@ function SettingsPanel({ compact = false, focus, publishSignal = 0, onSaved }: {
                           const storageId = await uploadAdminAsset({
                             file,
                             category: "logo",
-                            uploadUrl: generateUploadUrl,
-                            register,
                           })
                           setDraft((current) =>
                             current ? { ...current, [key]: storageId } : current
@@ -1161,9 +1151,9 @@ type StructuredCategory = "agenda" | "resolution" | "strategy" | "partnership"
 
 function AboutEditor() {
   const [category, setCategory] = useState<"overview" | "presentMoment">("overview")
-  const entries = useQuery(api.cms.listForAdmin, { category })
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
+  const entries = useAdminApi('/cms', { category })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
   const [selected, setSelected] = useState<string>("new")
   const [draft, setDraft] = useState<ContentDraft>({ ...blankContent })
   const existing = entries?.find((entry) => entry._id === selected)
@@ -1251,8 +1241,8 @@ function AboutEditor() {
 }
 
 function PageCopyEditor() {
-  const entries = useQuery(api.cms.listForAdmin, { category:"pageCopy" })
-  const save = useMutation(api.cms.save)
+  const entries = useAdminApi('/cms', { category:"pageCopy" })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
   const [selected, setSelected] = useState<string>("new")
   const [draft, setDraft] = useState<ContentDraft>({
     ...blankContent,
@@ -1366,8 +1356,8 @@ const editorialPageLabels:Record<string, string> = {
 }
 
 function EditorialCopyEditor() {
-  const entries = useQuery(api.cms.listForAdmin, { category:"sectionCopy" })
-  const save = useMutation(api.cms.save)
+  const entries = useAdminApi('/cms', { category:"sectionCopy" })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
   const [page, setPage] = useState("home")
   const [selected, setSelected] = useState<string>("")
   const [draft, setDraft] = useState<ContentDraft>({
@@ -1462,9 +1452,9 @@ function EditorialCopyEditor() {
 }
 
 function StructuredDocumentPanel({ category }: { category:StructuredCategory }) {
-  const entries = useQuery(api.cms.listForAdmin, { category })
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
+  const entries = useAdminApi('/cms', { category })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
   const [selected, setSelected] = useState<string>("new")
   const [draft, setDraft] = useState<ContentDraft>({
     ...blankContent,
@@ -1540,41 +1530,33 @@ function StructuredDocumentPanel({ category }: { category:StructuredCategory }) 
 async function uploadAdminAsset({
   file,
   category,
-  uploadUrl,
-  register,
 }: {
   file:File
-  category:"portrait" | "media" | "document" | "logo"
-  uploadUrl:()=>Promise<string>
-  register:(args:{ storageId:Id<"_storage">; fileName:string; mimeType:string; byteSize:number; altText:string; category:"portrait" | "media" | "document" | "logo" })=>Promise<unknown>
+  category:"portrait" | "media" | "document" | "logo" | "general"
 }) {
   if (file.size > 20_000_000) throw new Error("Files must be smaller than 20 MB.")
-  const url = await uploadUrl()
-  const response = await fetch(url, { method:"POST", headers:{ "Content-Type":file.type }, body:file })
-  if (!response.ok) throw new Error("The file could not be uploaded to Convex.")
-  const result = await response.json() as { storageId:Id<"_storage"> }
-  await register({
-    storageId:result.storageId,
-    fileName:file.name,
-    mimeType:file.type,
-    byteSize:file.size,
-    altText:file.name.replace(/\.[^.]+$/, "").trim() || "Uploaded file",
-    category,
-  })
+  const form = new FormData()
+  form.set("file", file)
+  form.set("category", category)
+  form.set("altText", file.name.replace(/\.[^.]+$/, "").trim() || "Uploaded file")
+  const response = await fetch("/api/v1/assets/upload", { method:"POST", body:form })
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null) as { error?:string } | null
+    throw new Error(detail?.error ?? "The file could not be uploaded.")
+  }
+  const result = await response.json() as { storageId:string }
   return result.storageId
 }
 
 function PeopleEditor({ mode }: { mode:"speaker" | "team" | "advisory" }) {
   const category = mode
-  const entries = useQuery(api.cms.listForAdmin, { category })
-  const assets = useQuery(api.assets.list)
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
+  const entries = useAdminApi('/cms', { category })
+  const assets = useAdminApi('/assets')
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
   const [selected, setSelected] = useState<string>("new")
   const [draft, setDraft] = useState<ContentDraft>({ ...blankContent })
-  const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | undefined>()
+  const [imageStorageId, setImageStorageId] = useState<string | undefined>()
   const [uploading, setUploading] = useState(false)
   const existing = entries?.find((entry) => entry._id === selected)
   const portraits = assets?.filter((asset) => asset.mimeType.startsWith("image/"))
@@ -1584,7 +1566,7 @@ function PeopleEditor({ mode }: { mode:"speaker" | "team" | "advisory" }) {
       const { _id, category: _category, imageStorageId:image, imageUrl: _url, ...fields } = existing
       void _id; void _category; void _url
       setDraft(fields)
-      setImageStorageId(image)
+      setImageStorageId(image ?? undefined)
     } else {
       setDraft({ ...blankContent })
       setImageStorageId(undefined)
@@ -1608,7 +1590,7 @@ function PeopleEditor({ mode }: { mode:"speaker" | "team" | "advisory" }) {
         <Field label="Short intro shown below the name" value={draft.role} onValueChange={(value) => update("role", value)} />
         {category === "speaker" && <Field label="Country" value={draft.country} onValueChange={(value) => update("country", value)} />}
         <Field label="Full biography (leave blank to show no biography)" multiline value={draft.body} onValueChange={(value) => update("body", value)} />
-        <label className="admin-field"><span>Profile picture</span><select value={imageStorageId ?? ""} onChange={(event) => setImageStorageId((event.target.value || undefined) as Id<"_storage"> | undefined)}><option value="">No picture selected</option>{portraits?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>
+        <label className="admin-field"><span>Profile picture</span><select value={imageStorageId ?? ""} onChange={(event) => setImageStorageId((event.target.value || undefined) as string | undefined)}><option value="">No picture selected</option>{portraits?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>
         <AdminFileUpload
           accept="image/jpeg,image/png,image/webp,image/avif"
           title="Upload profile picture"
@@ -1618,7 +1600,7 @@ function PeopleEditor({ mode }: { mode:"speaker" | "team" | "advisory" }) {
             if (!file.type.startsWith("image/")) throw new Error("Choose an image file.")
             setUploading(true)
             try {
-              const storageId = await uploadAdminAsset({ file, category:"portrait", uploadUrl:generateUploadUrl, register })
+              const storageId = await uploadAdminAsset({ file, category:"portrait" })
               setImageStorageId(storageId)
               toast.success("Profile picture uploaded and selected.")
             } finally {
@@ -1654,14 +1636,12 @@ function PeopleEditor({ mode }: { mode:"speaker" | "team" | "advisory" }) {
 }
 
 function MediaPublicationPanel() {
-  const data = useQuery(api.media.listForAdmin)
-  const assets = useQuery(api.assets.list)
-  const saveSection = useMutation(api.media.saveSection)
-  const removeSection = useMutation(api.media.removeSection)
-  const saveItem = useMutation(api.media.saveItem)
-  const removeItem = useMutation(api.media.removeItem)
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
+  const data = useAdminApi('/media')
+  const assets = useAdminApi('/assets')
+  const saveSection = (args: any) => apiAdminPost('/media/sections/save', args)
+  const removeSection = (args: { id: string }) => apiAdminDelete('/media/sections', args.id)
+  const saveItem = (args: any) => apiAdminPost('/media/items/save', args)
+  const removeItem = (args: { id: string }) => apiAdminDelete('/media/items', args.id)
   const [selected, setSelected] = useState<string>("new")
   const [uploading, setUploading] = useState<"cover" | "file" | null>(null)
   const [draft, setDraft] = useState<{
@@ -1670,8 +1650,8 @@ function MediaPublicationPanel() {
     title:string
     description:string
     mediaType:"document" | "photo" | "video"
-    coverStorageId?:Id<"_storage">
-    fileStorageId?:Id<"_storage">
+    coverStorageId?:string
+    fileStorageId?:string
     fileName:string
     mimeType:string
     youtubeUrl?:string
@@ -1741,7 +1721,7 @@ function MediaPublicationPanel() {
           <Field label="URL slug (optional)" value={draft.slug} placeholder="Generated from the title" onValueChange={(value) => setDraft({ ...draft, slug:value })} />
           <Field label="Title" value={draft.title} onValueChange={(value) => setDraft({ ...draft, title:value })} />
           <Field label="Description" multiline value={draft.description} onValueChange={(value) => setDraft({ ...draft, description:value })} />
-          {draft.mediaType === "document" && <label className="admin-field"><span>Optional cover image</span><select value={draft.coverStorageId ?? ""} onChange={(event) => setDraft({ ...draft, coverStorageId:(event.target.value || undefined) as Id<"_storage"> | undefined })}><option value="">No cover image</option>{imageAssets?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>}
+          {draft.mediaType === "document" && <label className="admin-field"><span>Optional cover image</span><select value={draft.coverStorageId ?? ""} onChange={(event) => setDraft({ ...draft, coverStorageId:(event.target.value || undefined) as string | undefined })}><option value="">No cover image</option>{imageAssets?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>}
           {draft.mediaType === "document" && <AdminFileUpload
             accept="image/jpeg,image/png,image/webp,image/avif"
             title="Upload cover image"
@@ -1750,7 +1730,7 @@ function MediaPublicationPanel() {
             onUpload={async (file) => {
               setUploading("cover")
               try {
-                const storageId = await uploadAdminAsset({ file, category:"media", uploadUrl:generateUploadUrl, register })
+                const storageId = await uploadAdminAsset({ file, category:"media" })
                 setDraft((current) => ({ ...current, coverStorageId:storageId }))
                 toast.success("Cover uploaded and selected.")
               } finally {
@@ -1760,7 +1740,7 @@ function MediaPublicationPanel() {
           />}
           {draft.mediaType !== "video" && <label className="admin-field"><span>{draft.mediaType === "photo" ? "Gallery image" : "Publication file"}</span><select value={draft.fileStorageId ?? ""} onChange={(event) => {
             const asset = assets?.find((item) => item.storageId === event.target.value)
-            setDraft({ ...draft, fileStorageId:(event.target.value || undefined) as Id<"_storage"> | undefined, fileName:asset?.fileName ?? "", mimeType:asset?.mimeType ?? "" })
+            setDraft({ ...draft, fileStorageId:(event.target.value || undefined) as string | undefined, fileName:asset?.fileName ?? "", mimeType:asset?.mimeType ?? "" })
           }}><option value="">Choose a file</option>{(draft.mediaType === "photo" ? imageAssets : fileAssets)?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>}
           {draft.mediaType !== "video" && <AdminFileUpload
             accept={draft.mediaType === "photo" ? "image/jpeg,image/png,image/webp,image/avif" : ".pdf,.doc,.docx,.ppt,.pptx,application/pdf"}
@@ -1770,7 +1750,7 @@ function MediaPublicationPanel() {
             onUpload={async (file) => {
               setUploading("file")
               try {
-                const storageId = await uploadAdminAsset({ file, category:draft.mediaType === "photo" ? "media" : "document", uploadUrl:generateUploadUrl, register })
+                const storageId = await uploadAdminAsset({ file, category:draft.mediaType === "photo" ? "media" : "document" })
                 setDraft((current) => ({ ...current, fileStorageId:storageId, fileName:file.name, mimeType:file.type }))
                 toast.success(draft.mediaType === "photo" ? "Gallery image uploaded and selected." : "Publication file uploaded and selected.")
               } finally {
@@ -1826,12 +1806,10 @@ function MediaPublicationPanel() {
 }
 
 function StatementsEditor() {
-  const rows = useQuery(api.statements.listForAdmin)
-  const assets = useQuery(api.assets.list)
-  const save = useMutation(api.statements.save)
-  const remove = useMutation(api.statements.remove)
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
+  const rows = useAdminApi('/statements')
+  const assets = useAdminApi('/assets')
+  const save = (args: any) => apiAdminPost('/statements/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/statements', args.id)
   const [selected, setSelected] = useState("new")
   const [uploading, setUploading] = useState(false)
   const [draft, setDraft] = useState<{
@@ -1839,7 +1817,7 @@ function StatementsEditor() {
     title:string
     description:string
     releaseDate:string
-    fileStorageId?:Id<"_storage">
+    fileStorageId?:string
     order:number
     status:"draft" | "published"
   }>({
@@ -1908,7 +1886,7 @@ function StatementsEditor() {
             value={draft.fileStorageId ?? ""}
             onChange={(event) => setDraft({
               ...draft,
-              fileStorageId:(event.target.value || undefined) as Id<"_storage"> | undefined,
+              fileStorageId:(event.target.value || undefined) as string | undefined,
             })}
           >
             <option value="">Choose a file</option>
@@ -1932,8 +1910,6 @@ function StatementsEditor() {
               const storageId = await uploadAdminAsset({
                 file,
                 category:"document",
-                uploadUrl:generateUploadUrl,
-                register,
               })
               setDraft((current) => ({ ...current, fileStorageId:storageId }))
               toast.success("Statement file uploaded and selected.")
@@ -1985,19 +1961,19 @@ function StatementsEditor() {
 
 function ContentPanel({ compact = false, initialCategory = "engage" }: { compact?:boolean; initialCategory?:(typeof categories)[number] }) {
   const [category, setCategory] = useState<(typeof categories)[number]>(initialCategory)
-  const entries = useQuery(api.cms.listForAdmin, { category })
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
-  const assets = useQuery(api.assets.list)
+  const entries = useAdminApi('/cms', { category })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
+  const assets = useAdminApi('/assets')
   const [selected, setSelected] = useState<string>("new")
-  const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | undefined>()
+  const [imageStorageId, setImageStorageId] = useState<string | undefined>()
   const existing = entries?.find((item) => item._id === selected)
   const [draft, setDraft] = useState<ContentDraft>({ ...blankContent })
   useEffect(() => { setCategory(initialCategory); setSelected("new") }, [initialCategory])
   useEffect(() => {
     if (existing) {
       const { _id, category: _category, imageStorageId: _image, imageUrl: _url, ...fields } = existing
-      setImageStorageId(_image)
+      setImageStorageId(_image ?? undefined)
       void _id; void _category; void _url
       setDraft(fields)
     } else { setDraft({ ...blankContent }); setImageStorageId(undefined) }
@@ -2021,7 +1997,7 @@ function ContentPanel({ compact = false, initialCategory = "engage" }: { compact
             <Field label="Display order" type="number" value={String(draft.order)} onValueChange={(value) => setDraft({ ...draft, order: Number(value) })} />
             <label className="admin-field"><span>Publication status</span><select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as "draft" | "published" })}><option value="draft">Draft</option><option value="published">Published</option></select></label>
             <label className="admin-check"><Checkbox checked={draft.featured} onCheckedChange={(value) => setDraft({ ...draft, featured: Boolean(value) })} /> Featured record</label>
-            <label className="admin-field"><span>Attached image or document</span><select value={imageStorageId ?? ""} onChange={(event) => setImageStorageId((event.target.value || undefined) as Id<"_storage"> | undefined)}><option value="">No attachment</option>{assets?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>
+            <label className="admin-field"><span>Attached image or document</span><select value={imageStorageId ?? ""} onChange={(event) => setImageStorageId((event.target.value || undefined) as string | undefined)}><option value="">No attachment</option>{assets?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}</select></label>
           </div>
           <div className="admin-editor-actions">
             <Button onClick={async () => {
@@ -2037,19 +2013,17 @@ function ContentPanel({ compact = false, initialCategory = "engage" }: { compact
 }
 
 function RegionalPanel() {
-  const rows = useQuery(api.content.listRegionalForAdmin)
-  const save = useMutation(api.content.saveRegional)
-  const remove = useMutation(api.content.removeRegional)
+  const rows = useAdminApi('/regional')
+  const save = (args: any) => apiAdminPost('/regional/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/regional', args.id)
   return <RecordCards title="Beyond Bangladesh" copy="Nepal is included. Add any country, revise its public briefing, change the order or hold it as a draft." rows={rows} fields={["slug","name","code","eyebrow","headline","summary","detail","sourceUrl","order","status"]} blank={{ slug:"",name:"",code:"",eyebrow:"",headline:"",summary:"",detail:"",sourceUrl:"",order:50,status:"draft" }} onSave={save} onRemove={remove} />
 }
 
 function PartnersPanel() {
-  const rows = useQuery(api.content.listOrganizationsForAdmin)
-  const assets = useQuery(api.assets.list)
-  const saveMutation = useMutation(api.content.saveOrganization)
-  const remove = useMutation(api.content.removeOrganization)
-  const uploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
+  const rows = useAdminApi('/organizations')
+  const assets = useAdminApi('/assets')
+  const saveMutation = (args: any) => apiAdminPost('/organizations/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/organizations', args.id)
   async function uploadLogo(file: File) {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"]
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".avif"]
@@ -2063,19 +2037,17 @@ function PartnersPanel() {
       throw new Error("Logos must be at least 320 × 180 pixels.")
     }
     bitmap.close()
-    const url = await uploadUrl()
-    const response = await fetch(url, { method:"POST", headers:{ "Content-Type":file.type }, body:file })
-    if (!response.ok) throw new Error("The logo could not be uploaded to Convex.")
-    const result = await response.json() as { storageId: Id<"_storage"> }
+    const form = new FormData()
+    form.set("file", file)
+    form.set("category", "logo")
     const plainName = file.name.replace(/\.[^.]+$/, "").trim()
-    await register({
-      storageId: result.storageId,
-      fileName: file.name,
-      mimeType: file.type,
-      byteSize: file.size,
-      altText: plainName.length >= 3 ? plainName : `Partner logo ${plainName}`,
-      category: "logo",
-    })
+    form.set("altText", plainName.length >= 3 ? plainName : `Partner logo ${plainName}`)
+    const response = await fetch("/api/v1/assets/upload", { method:"POST", body:form })
+    if (!response.ok) {
+      const detail = await response.json().catch(() => null) as { error?:string } | null
+      throw new Error(detail?.error ?? "The logo could not be uploaded.")
+    }
+    const result = await response.json() as { storageId: string }
     return result.storageId
   }
   async function saveOrganization(args:Parameters<typeof saveMutation>[0]) {
@@ -2085,7 +2057,7 @@ function PartnersPanel() {
       if (!isLegacyOrganizationRoleError(error)) throw error
       const legacySaveMutation = saveMutation as unknown as (
         legacyArgs:Record<string,unknown>
-      ) => Promise<Id<"organizations">>
+      ) => Promise<string>
       return await legacySaveMutation(omitOrganizationRole(args))
     }
   }
@@ -2127,8 +2099,8 @@ function PartnersPanel() {
 }
 
 function SupportingOrganizationsCopyEditor() {
-  const entries = useQuery(api.cms.listForAdmin, { category:"sectionCopy" })
-  const save = useMutation(api.cms.save)
+  const entries = useAdminApi('/cms', { category:"sectionCopy" })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
   const existing = entries?.find(
     (entry) => entry.slug === "supporting-organizations-heading"
   )
@@ -2200,8 +2172,8 @@ function SupportingOrganizationsCopyEditor() {
 type RecordAssetPicker = {
   field: string
   label: string
-  assets: Array<{ _id: string; storageId: Id<"_storage">; fileName: string; mimeType: string; altText: string; url: string | null }> | undefined
-  onUpload: (file: File) => Promise<Id<"_storage">>
+  assets: Array<{ _id: string; storageId: string; fileName: string; mimeType: string; altText: string; url: string | null }> | undefined
+  onUpload: (file: File) => Promise<string>
 }
 
 function RecordCards({ title, copy, rows, fields, blank, fieldLabels, assetPicker, onSave, onRemove }: { title:string; copy:string; rows: any[] | undefined; fields:string[]; blank:Record<string,any>; fieldLabels?:Record<string,string>; assetPicker?:RecordAssetPicker; onSave:(args:any)=>Promise<any>; onRemove:(args:any)=>Promise<any> }) {
@@ -2231,7 +2203,7 @@ function RecordCards({ title, copy, rows, fields, blank, fieldLabels, assetPicke
           <div className="admin-asset-picker">
             <label className="admin-field">
               <span>{assetPicker.label}</span>
-              <select value={draft[assetPicker.field] ?? ""} onChange={(event) => setDraft({ ...draft, [assetPicker.field]:event.target.value ? event.target.value as Id<"_storage"> : undefined })}>
+              <select value={draft[assetPicker.field] ?? ""} onChange={(event) => setDraft({ ...draft, [assetPicker.field]:event.target.value ? event.target.value as string : undefined })}>
                 <option value="">No logo attached</option>
                 {imageAssets?.map((asset) => <option key={asset._id} value={asset.storageId}>{asset.fileName}</option>)}
               </select>
@@ -2276,8 +2248,8 @@ function RecordCards({ title, copy, rows, fields, blank, fieldLabels, assetPicke
 }
 
 function InboxPanel() {
-  const rows = useQuery(api.admin.listSubmissions)
-  const update = useMutation(api.admin.updateSubmission)
+  const rows = useAdminApi('/submissions')
+  const update = (args: any) => apiAdminPost('/submissions/update', args)
   return (
     <section className="admin-panel">
       <PanelTitle eyebrow="Human contact" title="Support, registration and enquiries." copy="Every public form arrives here with a reference, status and private editorial note." />
@@ -2301,14 +2273,14 @@ function InboxPanel() {
 }
 
 function MailDeskPanel() {
-  const messages = useQuery(api.mail.listMessages)
-  const localAllowance = useQuery(api.mail.dailyAllowance)
-  const contacts = useQuery(api.mail.listContacts)
-  const markRead = useMutation(api.mail.markRead)
-  const deleteMessage = useMutation(api.mail.deleteMessage)
-  const saveContact = useMutation(api.mail.saveContact)
-  const removeContact = useMutation(api.mail.removeContact)
-  const [selectedId, setSelectedId] = useState<Id<"mailMessages"> | null>(null)
+  const messages = useAdminApi('/mail/messages')
+  const localAllowance = useAdminApi('/mail/allowance')
+  const contacts = useAdminApi('/mail/contacts')
+  const markRead = (args: any) => apiAdminPost('/mail/read', args)
+  const deleteMessage = (args: { id: string }) => apiAdminDelete('/mail/messages', args.id)
+  const saveContact = (args: any) => apiAdminPost('/mail/contacts/save', args)
+  const removeContact = (args: any) => apiAdminPost('/mail/contacts/delete', args)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [composeOpen, setComposeOpen] = useState(false)
   const [contactBookOpen, setContactBookOpen] = useState(false)
   const [recipientBookOpen, setRecipientBookOpen] = useState(false)
@@ -2600,12 +2572,12 @@ function MailDeskPanel() {
 }
 
 function ProgrammeAdmin() {
-  const data = useQuery(api.programme.listForAdmin)
-  const saveDay = useMutation(api.programme.saveDay)
-  const saveSession = useMutation(api.programme.saveSession)
-  const publishAllDrafts = useMutation(api.programme.publishAllDrafts)
-  const removeDay = useMutation(api.programme.removeDay)
-  const removeSession = useMutation(api.programme.removeSession)
+  const data = useAdminApi('/programme')
+  const saveDay = (args: any) => apiAdminPost('/programme/days/save', args)
+  const saveSession = (args: any) => apiAdminPost('/programme/sessions/save', args)
+  const publishAllDrafts = () => apiAdminPost<{ daysPublished:number; sessionsPublished:number }>('/programme/publish-all', {})
+  const removeDay = (args: { id: string }) => apiAdminDelete('/programme/days', args.id)
+  const removeSession = (args: { id: string }) => apiAdminDelete('/programme/sessions', args.id)
   return <section className="admin-panel">
     <PanelTitle eyebrow="Purpose-built schedule" title="Days, sessions and public navigation." copy="Changes update the programme tabs and navigation menu without a frontend deployment. Only records marked published appear on the public site." />
     <Button className="admin-publish-programme" variant="outline" onClick={async () => {
@@ -2636,9 +2608,9 @@ function ProgrammeAdmin() {
 }
 
 function ForumPackagesAdmin() {
-  const entries = useQuery(api.cms.listForAdmin, { category:"forumPackage" })
-  const save = useMutation(api.cms.save)
-  const remove = useMutation(api.cms.remove)
+  const entries = useAdminApi('/cms', { category:"forumPackage" })
+  const save = (args: any) => apiAdminPost('/cms/save', args)
+  const remove = (args: { id: string }) => apiAdminDelete('/cms', args.id)
   const rowsFor = (parentSlug:"accommodation" | "sponsorship") => entries
     ?.filter((entry) => entry.parentSlug === parentSlug)
     .map((entry) => ({
@@ -2665,11 +2637,11 @@ function ForumPackagesAdmin() {
 }
 
 function ChartsAdmin() {
-  const data = useQuery(api.charts.listForAdmin)
-  const saveSeries = useMutation(api.charts.saveSeries)
-  const savePoint = useMutation(api.charts.savePoint)
-  const removeSeries = useMutation(api.charts.removeSeries)
-  const removePoint = useMutation(api.charts.removePoint)
+  const data = useAdminApi('/charts')
+  const saveSeries = (args: any) => apiAdminPost('/charts/series/save', args)
+  const savePoint = (args: any) => apiAdminPost('/charts/points/save', args)
+  const removeSeries = (args: { id: string }) => apiAdminDelete('/charts/series', args.id)
+  const removePoint = (args: { id: string }) => apiAdminDelete('/charts/points', args.id)
   return <section className="admin-panel">
     <PanelTitle eyebrow="Accessible evidence" title="Chart series, sources and numeric points." copy="This editor now previews the live Population Share and Displacement charts on the homepage." />
     <RecordCards title="Chart series" copy="Titles, context, units and source citations." rows={data?.series.map((row) => ({ ...row, name:row.title }))} fields={["slug","title","eyebrow","description","sourceLabel","sourceUrl","unit","order","status"]} blank={{ slug:"",title:"",eyebrow:"",description:"",sourceLabel:"",sourceUrl:"",unit:"",order:50,status:"draft" }} onSave={saveSeries} onRemove={removeSeries} />
@@ -2678,9 +2650,9 @@ function ChartsAdmin() {
 }
 
 function DonationsPanel() {
-  const donations = useQuery(api.admin.listDonations)
-  const tiers = useQuery(api.donations.listTiersForAdmin)
-  const saveTier = useMutation(api.donations.saveTier)
+  const donations = useAdminApi('/donations')
+  const tiers = useAdminApi('/donation-tiers')
+  const saveTier = (args: any) => apiAdminPost('/donation-tiers/save', args)
   const total = useMemo(() => donations?.filter((d) => d.status === "paid" || d.status === "demo").reduce((sum, d) => sum + d.amountCents, 0) ?? 0, [donations])
   return (
     <section className="admin-panel">
@@ -2712,10 +2684,8 @@ function TierEditor({ tier, onSave }: { tier:any; onSave:(args:any)=>Promise<any
 }
 
 function AssetsPanel() {
-  const assets = useQuery(api.assets.list)
-  const uploadUrl = useMutation(api.assets.generateUploadUrl)
-  const register = useMutation(api.assets.register)
-  const remove = useMutation(api.assets.remove)
+  const assets = useAdminApi('/assets')
+  const remove = (args: { id: string }) => apiAdminDelete('/assets', args.id)
   async function upload(file: File) {
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".avif", ".pdf"]
     if (!allowedExtensions.some((extension) => file.name.toLowerCase().endsWith(extension))) {
@@ -2729,17 +2699,20 @@ function AssetsPanel() {
       }
       bitmap.close()
     }
-    const url = await uploadUrl()
-    const response = await fetch(url, { method:"POST", headers:{ "Content-Type":file.type }, body:file })
-    if (!response.ok) throw new Error("Convex rejected the upload. Please try again.")
-    const payload = (await response.json()) as { storageId: Id<"_storage"> }
-    const { storageId } = payload
-    await register({ storageId, fileName:file.name, mimeType:file.type, byteSize:file.size, altText:file.name.replace(/\.[^.]+$/, ""), category:file.type === "application/pdf" ? "document" : "general" })
-    toast.success("Asset uploaded to Convex.")
+    const form = new FormData()
+    form.set("file", file)
+    form.set("category", file.type === "application/pdf" ? "document" : "general")
+    form.set("altText", file.name.replace(/\.[^.]+$/, "") || "Uploaded file")
+    const response = await fetch("/api/v1/assets/upload", { method:"POST", body:form })
+    if (!response.ok) {
+      const detail = await response.json().catch(() => null) as { error?:string } | null
+      throw new Error(detail?.error ?? "The upload was rejected. Please try again.")
+    }
+    toast.success("Asset uploaded.")
   }
   return (
     <section className="admin-panel">
-      <PanelTitle eyebrow="Convex file storage" title="A single source for images and documents." copy="Upload JPEG, PNG, WebP, AVIF or PDF files up to 20 MB. Managed URLs can be attached to content records." />
+      <PanelTitle eyebrow="Managed file storage" title="A single source for images and documents." copy="Upload JPEG, PNG, WebP, AVIF or PDF files up to 20 MB. Managed URLs can be attached to content records." />
       <AdminFileUpload
         accept="image/jpeg,image/png,image/webp,image/avif,application/pdf"
         title="Drop or choose an approved file"
@@ -2752,7 +2725,7 @@ function AssetsPanel() {
 }
 
 function AuditPanel() {
-  const rows = useQuery(api.admin.listAuditEvents)
+  const rows = useAdminApi('/audit')
   return <section className="admin-panel"><PanelTitle eyebrow="Accountability" title="Editorial activity log." copy="Important content, file and inbox actions leave a timestamped record." /><div className="audit-timeline">{rows?.map((row) => <article key={row._id}><span /><div><Badge variant="outline">{row.entityType}</Badge><h3>{row.summary}</h3><p>{row.actorEmail} · {new Date(row.createdAt).toLocaleString()}</p></div></article>)}</div></section>
 }
 

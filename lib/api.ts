@@ -89,6 +89,8 @@ export interface SummitSettings extends Record<string, any> {
   footerBody: string
   logoUrl: string | null
   faviconUrl: string | null
+  logoStorageId: string | null
+  faviconStorageId: string | null
 }
 
 export interface ProgrammeSession {
@@ -266,6 +268,353 @@ export function useApi<Path extends keyof ApiResponses>(
   }, [key])
 
   return data
+}
+
+export type AdminRole = "administrator" | "editor" | "mail_manager"
+
+export interface AdminAccessState {
+  signedIn: boolean
+  bootstrapAvailable: boolean
+  admin: { name: string; email: string; role: AdminRole } | null
+}
+
+export interface AdminTeamMember {
+  _id: string
+  name: string
+  email: string
+  role: string
+  status: string
+  createdAt: number
+}
+
+export interface AdminDashboard {
+  content: number
+  submissions: number
+  donations: number
+  assets: number
+  recentSubmissions: Array<{ _id: string; type: string; name: string; email: string; status: string; createdAt: number }>
+}
+
+export interface AdminSubmission {
+  _id: string
+  _creationTime: number
+  type: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  organization: string
+  subject: string
+  message: string
+  status: string
+  adminNote: string
+  createdAt: number
+}
+
+export interface AdminDonation {
+  _id: string
+  reference: string
+  donorName: string
+  donorEmail: string
+  amountCents: number
+  currency: string
+  status: string
+  createdAt: number
+}
+
+export interface AdminAuditEvent {
+  _id: string
+  actorEmail: string
+  action: string
+  entityType: string
+  summary: string
+  createdAt: number
+}
+
+export interface AdminAsset {
+  _id: string
+  storageId: string
+  fileName: string
+  mimeType: string
+  byteSize: number
+  altText: string
+  category: string
+  url: string | null
+  uploadedAt: number
+}
+
+export interface AdminBanner {
+  _id: string
+  title: string
+  imageStorageId?: string
+  imageUrl: string | null
+  altText: string
+  order: number
+  status: "draft" | "published"
+  updatedAt: number
+}
+
+export interface AdminRegional {
+  _id: string
+  slug: string
+  name: string
+  code: string
+  eyebrow: string
+  headline: string
+  summary: string
+  detail: string
+  sourceUrl: string
+  order: number
+  status: string
+}
+
+export interface AdminOrganization {
+  _id: string
+  slug: string
+  name: string
+  organizationRole?: "organizing" | "managing" | "supporting"
+  kind: string
+  tier: string
+  description: string
+  websiteUrl?: string
+  logoStorageId?: string
+  order: number
+  status: string
+}
+
+export interface AdminMediaSection {
+  _id: string
+  slug: string
+  name: string
+  description: string
+  order: number
+  status: string
+}
+
+export interface AdminMediaItem {
+  _id: string
+  sectionSlug: string
+  slug: string
+  title: string
+  description: string
+  mediaType: "document" | "photo" | "video"
+  coverStorageId?: string
+  fileStorageId?: string
+  fileName: string
+  mimeType: string
+  youtubeUrl?: string
+  order: number
+  status: "draft" | "published"
+}
+
+export interface AdminMedia {
+  sections: AdminMediaSection[]
+  items: AdminMediaItem[]
+}
+
+export interface AdminStatement {
+  _id: string
+  slug: string
+  title: string
+  description: string
+  releaseDate: string
+  fileStorageId: string
+  fileName: string
+  mimeType: string
+  order: number
+  status: "draft" | "published"
+}
+
+export interface AdminProgrammeDay {
+  _id: string
+  slug: string
+  tabLabel: string
+  navigationLabel: string
+  dateLabel: string
+  summary: string
+  order: number
+  status: string
+}
+
+export interface AdminProgrammeSession {
+  _id: string
+  daySlug: string
+  slug: string
+  startTime: string
+  endTime: string
+  title: string
+  description: string
+  tag: string
+  speakers: string
+  location: string
+  order: number
+  status: string
+}
+
+export interface AdminProgramme {
+  days: AdminProgrammeDay[]
+  sessions: AdminProgrammeSession[]
+}
+
+export interface AdminChartSeries {
+  _id: string
+  slug: string
+  title: string
+  eyebrow: string
+  description: string
+  sourceLabel: string
+  sourceUrl: string
+  unit: string
+  order: number
+  status: string
+}
+
+export interface AdminChartPoint {
+  _id: string
+  seriesSlug: string
+  label: string
+  sublabel: string
+  value: number
+  order: number
+}
+
+export interface AdminCharts {
+  series: AdminChartSeries[]
+  points: AdminChartPoint[]
+}
+
+export interface AdminTier {
+  _id: string
+  slug: string
+  label: string
+  amountCents: number | null
+  description: string
+  stripePriceId: string | null
+  customAmount: boolean
+  order: number
+  status: string
+}
+
+export interface AdminMailAttachment {
+  _id: string
+  fileName: string
+  mimeType: string
+  byteSize: number
+  contentId: string | null
+}
+
+export interface AdminMailMessage {
+  _id: string
+  _creationTime: number
+  direction: string
+  messageId: string
+  inReplyTo: string | null
+  references: string | null
+  fromAddress: string
+  fromName: string
+  toAddresses: string[]
+  ccAddresses: string[]
+  bccAddresses: string[]
+  deliveredAddresses: string[]
+  failedAddresses: string[]
+  deferredAddresses: string[]
+  subject: string
+  textBody: string
+  htmlBody: string
+  deliveryStatus: string
+  isRead: boolean
+  sentByEmail: string | null
+  providerResponse: string | null
+  createdAt: number
+  updatedAt: number
+  attachments: AdminMailAttachment[]
+}
+
+export interface AdminMailAllowance {
+  limit: number
+  used: number
+  remaining: number
+  resetsAt: number
+  providerRemaining: number | null
+  source: string
+}
+
+export interface AdminMailContact {
+  _id: string
+  name: string
+  email: string
+  organization: string
+  notes: string
+  createdAt: number
+}
+
+interface AdminApiResponses {
+  "/access": AdminAccessState
+  "/team": AdminTeamMember[]
+  "/dashboard": AdminDashboard
+  "/submissions": AdminSubmission[]
+  "/donations": AdminDonation[]
+  "/audit": AdminAuditEvent[]
+  "/assets": AdminAsset[]
+  "/banners": AdminBanner[]
+  "/cms": CmsEntry[]
+  "/regional": AdminRegional[]
+  "/organizations": AdminOrganization[]
+  "/media": AdminMedia
+  "/statements": AdminStatement[]
+  "/programme": AdminProgramme
+  "/charts": AdminCharts
+  "/donation-tiers": AdminTier[]
+  "/mail/messages": AdminMailMessage[]
+  "/mail/allowance": AdminMailAllowance
+  "/mail/contacts": AdminMailContact[]
+}
+
+export function useAdminApi<Path extends keyof AdminApiResponses>(
+  path: Path,
+  params?: Record<string, string | number | boolean>
+): AdminApiResponses[Path] | undefined {
+  const key = `/admin${path}${toQuery(params)}`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [data, setData] = useState<any>(undefined)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/v1${key}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`API ${response.status}`)
+        return response.json()
+      })
+      .then((payload) => {
+        if (!cancelled) setData(payload)
+      })
+      .catch(() => {
+        if (!cancelled) setData(undefined)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return data
+}
+
+export async function apiAdminPost<T>(path: string, body: unknown): Promise<T> {
+  return apiPost<T>(`/admin${path}`, body)
+}
+
+export async function apiAdminDelete(path: string, id: string): Promise<null> {
+  const response = await fetch(`/api/v1/admin${path}/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  })
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null)
+    throw new Error(
+      (detail as { error?: string } | null)?.error ?? `Request failed (${response.status})`
+    )
+  }
+  return null
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
