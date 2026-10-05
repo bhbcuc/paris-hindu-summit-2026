@@ -64,7 +64,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
   production and the Expo mail desk. Store the backend's file IDs in records and
   resolve URLs at read time on whichever store is in use.
 - [x] Public content changes must publish without a new frontend deployment.
-- [x] SSLCOMMERZ is the selected payment provider for the initial donation launch. Polar is excluded, and Stripe is deferred. `Interim (5 October 2026)`: donations are bank-transfer only, the Stripe prototype has been removed, and SSLCOMMERZ stays deferred pending merchant confirmation.
+- [x] SSLCOMMERZ is the selected payment provider for the initial donation launch. Polar is excluded, and Stripe is deferred. `Interim (5 October 2026)`: the Worker/D1 donation path is bank-transfer only with the Stripe prototype removed from `server/`; `convex/stripe.ts` and the `stripe` dependency are retained while live Vercel production still runs on Convex. SSLCOMMERZ stays deferred pending merchant confirmation.
 - [x] Registration and donation entry points remain visible in desktop and mobile navigation.
 - [x] Working delivery decision: retain the complete homepage plus detail pages for deep content and SEO.
 - [x] Public brand is “Paris Hindu Summit” with the subtitle “Global Forum on Religious Freedom and Hindu Minority Rights”.
@@ -153,7 +153,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Admin-managed tiers for €25, €100, €500, and Other amount.
 - [x] Provider decision: use SSLCOMMERZ for the initial launch, including local Bangladeshi payments and any international card acceptance approved for the merchant account.
 - [x] Polar is excluded because its acceptable-use rules prohibit donations, crowdfunding, and sponsorship collection.
-- [x] Stripe is deferred and its inactive prototype code has been removed; it must not be reintroduced as the launch payment integration. `Interim (5 October 2026)`: bank transfer is the only contribution route in place.
+- [x] Stripe is deferred; its inactive prototype code has been removed from the Worker/D1 path and must not be reintroduced as the launch payment integration. `Interim (5 October 2026)`: bank transfer is the only contribution route in the Worker; `convex/stripe.ts` stays until the Convex cutover is signed off.
 - [ ] Implement SSLCOMMERZ session initiation, signed validation/IPN handling, server-side amount verification, and payment-status reconciliation.
 - [ ] Confirm the merchant account’s approved currencies, international-card acceptance, settlement route, and foreign-donation compliance before enabling live collection.
 - [x] Custom amount has client and server minimum/maximum validation.
