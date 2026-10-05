@@ -194,7 +194,7 @@ function AuthGate() {
             Edit the summit, receive enquiries, publish regional briefings, and
             monitor donations from one controlled workspace.
           </p>
-          <div className="auth-pulse"><span /> Better Auth + Convex</div>
+          <div className="auth-pulse"><span /> Better Auth + managed content store</div>
         </section>
         <section className="admin-auth-card">
           <p className="admin-kicker">{mode === "signin" ? "Welcome back" : "Initial setup"}</p>
@@ -977,7 +977,7 @@ function Dashboard() {
   ] as const
   return (
     <section className="admin-panel">
-      <div className="admin-status-line"><span /> Systems connected · public site reads live Convex data</div>
+      <div className="admin-status-line"><span /> Systems connected · public site reads live site data</div>
       <div className="admin-stat-grid">
         {stats.map(([label, value, Icon], index) => (
           <article key={label}><Icon /><span>0{index + 1}</span><b>{value}</b><p>{label}</p></article>
@@ -2439,7 +2439,7 @@ function MailDeskPanel() {
         <PanelTitle
           eyebrow="Correspondence ledger"
           title="One desk for summit email."
-          copy="Incoming messages are archived here and forwarded by Cloudflare. Replies leave as info@parishindusummit.org through Brevo."
+          copy="Incoming messages are archived here and forwarded by Cloudflare. Replies leave as info@parishindusummit.org through Resend."
         />
         <div className="mail-desk-actions">
           <Button variant="outline" onClick={() => setContactBookOpen(true)}><BookUserIcon /> Contacts · {contacts?.length ?? 0}</Button>
@@ -2455,7 +2455,7 @@ function MailDeskPanel() {
         <div className="mail-allowance" aria-label={`${allowance?.remaining ?? 300} of 300 recipients remaining today`}>
           <div><span>Daily dispatch allowance</span><strong>{allowance?.remaining ?? "—"} <small>of {allowance?.limit ?? 300} left</small></strong></div>
           <div className="mail-allowance-track"><span style={{ width:`${usagePercent}%` }} /></div>
-          <small>{providerAllowance?.source === "brevo" ? "Live Brevo balance" : "Local dispatch ledger"} · resets {allowance ? new Date(allowance.resetsAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "at midnight UTC"}</small>
+          <small>{providerAllowance?.source === "brevo" ? "Provider-reported allowance" : "Local dispatch ledger"} · resets {allowance ? new Date(allowance.resetsAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "at midnight UTC"}</small>
         </div>
       </div>
       <div className="mail-desk-grid">
@@ -2729,7 +2729,7 @@ function AuditPanel() {
 }
 
 function ConfirmDelete({ label, onConfirm }: { label:string; onConfirm:()=>Promise<void> }) {
-  return <AlertDialog><AlertDialogTrigger render={<Button variant="destructive" />}>Delete</AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the record from Convex. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep record</AlertDialogCancel><AlertDialogAction onClick={() => void onConfirm()}>Delete permanently</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  return <AlertDialog><AlertDialogTrigger render={<Button variant="destructive" />}>Delete</AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the record from the content store. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep record</AlertDialogCancel><AlertDialogAction onClick={() => void onConfirm()}>Delete permanently</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 }
 
 function Field({ label, multiline, onValueChange, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label:string; multiline?:boolean; onValueChange?:(value:string)=>void }) {

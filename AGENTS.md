@@ -23,6 +23,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
   production. Use an authenticated Admin mutation for editorial changes and
   verify that production content-table fingerprints are unchanged by releases.
 
+### Migration-interim amendment (5 October 2026)
+
+The backend is dual-backend while the Cloudflare migration is in flight. These
+rules amend the Convex-specific rules above for that interim period.
+
+- The web app on this branch reads and writes D1 and R2 through the Hono API on
+  Cloudflare Workers. Web code must not import `convex/react` or reach a Convex
+  client.
+- `convex/` is retained and must not be deleted or proposed for deletion. Live
+  Vercel production and the Expo mail-desk app still depend on it. Treat Convex
+  and D1 as two stores, and resolve file URLs at read time in both.
+- `bun run convex:deploy:prod` is now scoped to changes that touch `convex/`.
+  Do not run it for unrelated commits. Changes outside `convex/` ship through the
+  Cloudflare pipeline, and D1 schema changes ship as ordered migrations in
+  `db/migrations/`.
+- Gate D1 releases on the content-table fingerprint comparison. A release that
+  changes fingerprints is a failed release unless the change was a deliberate
+  authenticated Admin edit.
+- The rules above about never exposing an unauthenticated admin write, and never
+  seeding, fixture-syncing, or migrating production, apply unchanged to D1 and R2.
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.

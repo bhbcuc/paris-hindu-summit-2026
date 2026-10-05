@@ -1,14 +1,44 @@
 # Product specification checklist
 
-Last reviewed: 29 July 2026
+Last reviewed: 5 October 2026
 Source of truth: `Paris_Website_Spec.pdf`, supplied 26 July 2026
 Target launch: August 2026
 Event: 3–4 October 2026
 
 This is the living delivery checklist for the public website, admin panel, content
 model, integrations, and launch. Update a checkbox only when the behaviour has
-been implemented and verified in both the development and production Convex
-deployments where data is involved.
+been implemented and verified in both the development and production deployments
+of whichever backend serves it, where data is involved.
+
+## Backend migration interim status (5 October 2026)
+
+The backend is mid-migration and currently dual-backend. This section is the
+status record for that interim period; the feature sections below remain the
+authority on delivered product behaviour.
+
+- Dual-backend, interim: the web app reads and writes content through a Hono API
+  on Cloudflare Workers backed by D1 (content, submissions, donations, audit) and
+  R2 (images and files). `convex/` is retained and still serves the live Vercel
+  production deployment and the Expo mail-desk app. Neither backend is scheduled
+  for removal on this branch.
+- Payment decision recorded: donations are **bank-transfer only** for now. The
+  donation journey stays in demonstration mode, the inactive Stripe prototype is
+  gone, and SSLCOMMERZ implementation remains deferred and pending merchant
+  confirmation of currencies, international-card acceptance, settlement, and
+  foreign-donation compliance.
+- Known issues and open items on this branch:
+  - R2 image optimizer fix in progress. The Cloudflare Images optimizer wiring in
+    `vite.config.ts` is not yet settled; verify rendering and dimensions of managed
+    R2 images before a production Cloudflare release.
+  - `/privacy` and `/terms` render empty. The `legal` content category has 0 rows
+    in the D1 store, so both routes have nothing to render. This needs an
+    authenticated Admin content write, not a seed or fixture script.
+  - Content deltas against Convex development are Admin-owned data, not code
+    bugs: the Day 03 programme day, the engage cards, and the evidence stats
+    records differ between the two stores. Carry them across as Admin writes.
+  - Fingerprint comparison and migration-runner scripts have been added so D1
+    releases can be gated on content-table fingerprints the same way Convex
+    releases were.
 
 For the full delivered-feature inventory, see
 [`COMPLETED_WORK_CHECKLIST.md`](COMPLETED_WORK_CHECKLIST.md).
@@ -29,8 +59,12 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Beyond Bangladesh is data-driven: admins can add more countries and edit their details.
 - [x] Partners and sponsors use a stationary, tiered institutional wall rather than a slider or marquee.
 - [x] Convex is the central content store and file/image storage service.
+  `Interim (5 October 2026)`: dual-backend during migration. The web app reads and
+  writes D1/R2 through the Hono API on Workers; Convex still serves live Vercel
+  production and the Expo mail desk. Store the backend's file IDs in records and
+  resolve URLs at read time on whichever store is in use.
 - [x] Public content changes must publish without a new frontend deployment.
-- [x] SSLCOMMERZ is the selected payment provider for the initial donation launch. Polar is excluded, and Stripe is deferred.
+- [x] SSLCOMMERZ is the selected payment provider for the initial donation launch. Polar is excluded, and Stripe is deferred. `Interim (5 October 2026)`: donations are bank-transfer only, the Stripe prototype has been removed, and SSLCOMMERZ stays deferred pending merchant confirmation.
 - [x] Registration and donation entry points remain visible in desktop and mobile navigation.
 - [x] Working delivery decision: retain the complete homepage plus detail pages for deep content and SEO.
 - [x] Public brand is “Paris Hindu Summit” with the subtitle “Global Forum on Religious Freedom and Hindu Minority Rights”.
@@ -74,7 +108,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] The former homepage Challenges card section was removed by client request.
 - [x] Beyond Bangladesh includes Pakistan, Afghanistan, Myanmar, and Nepal.
 - [x] Regional cards are backed by an extensible Convex country model.
-- [x] Dedicated animated Donate and Support pages with server-backed demo behaviour. `Partial`: replace the inactive Stripe prototype with SSLCOMMERZ before live collection.
+- [x] Dedicated animated Donate and Support pages with server-backed demo behaviour. `Partial`: collection is bank-transfer only for now; the inactive Stripe prototype has been removed, so SSLCOMMERZ must be built from scratch before any live collection.
 - [x] Full persistent Registration section with required fields, consent, reference, and admin inbox workflow.
 - [x] Footer foundation.
 - [x] Footer navigation, managed email, registration, donate, legal links, and recognisable Facebook, X/Twitter, Instagram, LinkedIn, and YouTube icons.
@@ -119,11 +153,11 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Admin-managed tiers for €25, €100, €500, and Other amount.
 - [x] Provider decision: use SSLCOMMERZ for the initial launch, including local Bangladeshi payments and any international card acceptance approved for the merchant account.
 - [x] Polar is excluded because its acceptable-use rules prohibit donations, crowdfunding, and sponsorship collection.
-- [x] Stripe is deferred; the existing inactive Stripe prototype must not be treated as the launch payment integration.
+- [x] Stripe is deferred and its inactive prototype code has been removed; it must not be reintroduced as the launch payment integration. `Interim (5 October 2026)`: bank transfer is the only contribution route in place.
 - [ ] Implement SSLCOMMERZ session initiation, signed validation/IPN handling, server-side amount verification, and payment-status reconciliation.
 - [ ] Confirm the merchant account’s approved currencies, international-card acceptance, settlement route, and foreign-donation compliance before enabling live collection.
 - [x] Custom amount has client and server minimum/maximum validation.
-- [x] A clear demonstration result state exists. `Partial`: replace the inactive Stripe return flow with SSLCOMMERZ success, failure, and cancellation handling.
+- [x] A clear demonstration result state exists. `Partial`: the Stripe return flow is gone, so SSLCOMMERZ success, failure, and cancellation handling still has to be built.
 - [ ] Donation receipt and organiser notification.
 - [ ] Currency, tax/charity wording, refund policy, privacy wording, and legal entity are approved before activation.
 
@@ -166,7 +200,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Announcement content and enabled state.
 - [x] Contact, registration and press emails, phone, and WhatsApp.
 - [x] Facebook, X/Twitter, Instagram, and YouTube links.
-- [x] Donation tier labels are editable. `Partial`: remove the inactive Stripe price-reference field when SSLCOMMERZ implementation begins.
+- [x] Donation tier labels are editable. `Partial`: the old Stripe price-reference field is removed; SSLCOMMERZ will need its own reference handling when implementation begins.
 - [x] Footer title/body. `Partial`: legal-link records remain.
 
 ### Programme tab — dynamic
@@ -244,6 +278,10 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 
 ## Convex content and file architecture
 
+`Interim (5 October 2026)`: this section is modelled on Convex and still describes
+the Convex store, which continues to serve live production and the Expo mail desk.
+The equivalent D1 tables and R2 objects now serve the web app on this branch.
+
 - [x] `regionalCountries`, `organizations`, `homeBanners`, and `assets` schema.
 - [x] Public reads use indexed queries and return resolved storage URLs rather than persisting URLs.
 - [x] File records store `Id<"_storage">`; temporary storage URLs are never stored.
@@ -259,9 +297,9 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 Keep these in code:
 
 - [x] Design tokens, typography, responsive grid, reusable components, accessibility behaviour, route/layout shell, and validation rules.
-- [x] Convex schema, secure server functions, inactive Stripe prototype code, and role enforcement. `Partial`: replace the prototype with SSLCOMMERZ.
+- [x] Convex schema, D1 migrations, secure server functions, and role enforcement. `Partial`: the inactive Stripe prototype has been removed; SSLCOMMERZ integration still has to be written when it is un-deferred.
 
-Move these to Convex and expose through Admin:
+Move these to the content store and expose through Admin:
 
 - [x] Event facts, contact/social links, announcement, footer content, and donation tiers.
 - [x] Principal public-page hero labels, titles, and introductions.
@@ -279,17 +317,21 @@ Never make these editable as plain content:
 
 - [x] `.env.local` is ignored by Git.
 - [x] Development and production Convex deployments are configured.
+- [x] `Interim (5 October 2026)`: Cloudflare resources are split the same way. Development and preview use `summit-db-dev` and `summit-assets-dev` with the `summit-website-dev` Worker; production uses `summit-db` and `summit-assets` with the `summit-website` Worker.
 - [x] Separate ignored development and production deploy-key files allow
   Convex commands to run without the active CLI account session.
 - [x] Package scripts explicitly select the intended deployment and prevent a
   production deploy from accidentally targeting development.
 - [x] Every schema/function change passes `bun run typecheck`.
 - [x] Every app change passes `bun run lint` and `bun run build`.
-- [x] After every Git commit, run `bun run convex:deploy:prod`.
+- [x] After every Git commit, run `bun run convex:deploy:prod`. `Interim (5 October 2026)`: scoped to Convex-touching changes only. Changes that do not touch `convex/` deploy through the Cloudflare pipeline instead, and D1 releases are gated on the content-table fingerprint gate.
 - [x] The initial-content seed is first-install-only and becomes a verified no-op once Admin-managed site content exists.
 - [x] Re-running the seed cannot restore administrator-deleted Evidence, Programme, Engage, support, legal, partner, media, or other fixture records.
 - [x] Production seeding fails closed, and retired content migration/repair functions are absent from the deployed API.
 - [x] Releases preserve every production content table and stored file; only authenticated Admin and operational form/payment flows may write live data.
+- [x] `Interim (5 October 2026)`: the same rules apply to the D1/R2 backend. D1 schema changes ship as ordered migrations in `db/migrations/`, and a release is only accepted when the content-table fingerprint comparison shows no unintended content change.
+- [x] `Interim (5 October 2026)`: no seed, fixture sync, or reusable content migration runs against either production store. Carry Day 03, the engage cards, and the evidence stats across as authenticated Admin writes.
+- [ ] `Interim (5 October 2026)`: publish `legal` category rows through Admin so `/privacy` and `/terms` render approved copy.
 - [x] Public managed lists use stable loading silhouettes rather than briefly rendering empty or fallback states while Convex resolves.
 - [x] Media item saves omit absent optional storage and YouTube fields, allowing photo-gallery uploads to persist.
 - [x] Media item saves validate live section and asset selections, generate safe slugs when omitted, and persist canonical registered-file metadata.
@@ -302,6 +344,7 @@ Never make these editable as plain content:
 - [x] Every production Convex deploy and production seed automatically creates a checksummed full snapshot, including authentication records and stored files.
 - [x] Production is the editorial source of truth; development may be refreshed from production only after separate backups of both deployments.
 - [ ] Production backup/export and restore drill before launch.
+- [ ] `Interim (5 October 2026)`: D1 export backup and restore drill before launch.
 - [x] Automated and manual accessibility pass covers keyboard navigation, focus, contrast, reduced motion, form errors and chart data-table alternatives. `Partial`: final third-party audit remains a launch-day check.
 - [x] GitHub issue #52 — committee and advisory designations use prominent, high-contrast labels that remain readable on compact screens and wrap longer roles safely.
 - [x] Responsive QA covers compact mobile, tablet and desktop layouts. `Partial`: final physical-device and Safari/Firefox sign-off remains.
