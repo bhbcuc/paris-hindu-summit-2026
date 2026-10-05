@@ -22,7 +22,12 @@
     "dev:vinext": "vite dev --port 3001",
     "build:vinext": "vite build",
     "start:vinext": "vite preview",
-    "deploy:vinext": "vinext-cloudflare deploy"
+    "deploy:vinext": "vinext-cloudflare deploy",
+    "db:migrate:dev": "node scripts/d1-migrate.mjs --target dev --dir db/migrations",
+    "db:migrate:guarded": "node scripts/d1-migrate.mjs --target dev --dir db/migrations --guarded",
+    "db:fingerprint:dev": "node scripts/d1-fingerprint.mjs --target dev",
+    "db:fingerprint:prod": "node scripts/d1-fingerprint.mjs --target prod --allow-production",
+    "import:convex:snapshot": "node scripts/import-convex-snapshot.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

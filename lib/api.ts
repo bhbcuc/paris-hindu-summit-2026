@@ -44,7 +44,33 @@ export interface CmsEntry {
   imageUrl: string | null
 }
 
-export interface SummitSettings extends Record<string, any> {
+// The `siteSettings` row (db/migrations/0001_init.sql) is a wide single-row
+// table: every column is TEXT except the three INTEGER toggles, which the API
+// converts to booleans. The index signature covers the admin settings editor,
+// which renders field keys dynamically, so unknown keys must stay typed.
+// Nullable asset columns are declared optional; D1 hands back `null` for them
+// and every consumer guards with a falsy check or `?? ""`.
+export interface SummitSettings extends Record<string, string | boolean | undefined> {
+  eventName: string
+  shortName: string
+  theme: string
+  timezone: string
+  venue: string
+  address: string
+  cityCountry: string
+  format: string
+  delegateInfo: string
+  languages: string
+  linkedinUrl: string
+  heroEyebrow: string
+  heroTitleLine1: string
+  heroTitleLine2: string
+  heroLead: string
+  whyTitle: string
+  whyBody: string
+  donationEyebrow: string
+  donationTitle: string
+  donationBody: string
   bankTransferEyebrow: string
   bankTransferTitle: string
   bankTransferBody: string
@@ -87,10 +113,10 @@ export interface SummitSettings extends Record<string, any> {
   sponsorshipPackageIntro: string
   footerTitle: string
   footerBody: string
-  logoUrl: string | null
-  faviconUrl: string | null
-  logoStorageId: string | null
-  faviconStorageId: string | null
+  logoUrl?: string
+  faviconUrl?: string
+  logoStorageId?: string
+  faviconStorageId?: string
 }
 
 export interface ProgrammeSession {

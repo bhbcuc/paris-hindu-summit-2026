@@ -126,9 +126,16 @@ const TRUSTED_ORIGINS = [
 ]
 
 export function getAuth(env: SummitEnv, origin: string) {
+  // Extra origins (preview deployments, alternate domains) come from the
+  // comma-separated EXTRA_TRUSTED_ORIGINS plain-text var; entries are trimmed
+  // and empty items dropped so a trailing comma cannot widen trust.
+  const extraOrigins = (env.EXTRA_TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
   const options = {
     baseURL: env.BETTER_AUTH_URL ?? origin,
-    trustedOrigins: [...TRUSTED_ORIGINS, env.BETTER_AUTH_URL ?? origin],
+    trustedOrigins: [...TRUSTED_ORIGINS, env.BETTER_AUTH_URL ?? origin, ...extraOrigins],
     secret: env.BETTER_AUTH_SECRET,
     database: kyselyAdapter(createD1Kysely(env.DB), { type: "sqlite" }),
     emailAndPassword: {

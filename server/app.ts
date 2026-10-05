@@ -20,11 +20,21 @@ import {
 // Response shapes mirror the Convex functions 1:1 (same field names,
 // `_id` strings, `*Url` file fields served via /api/v1/files/:key) so the
 // frontend cutover is mechanical. Mounted at /api/v1/* (see
-// app/api/v1/[[...route]]/route.ts). Auth/session flows stay on Convex
-// (better-auth) until the session cutover; admin mutations below are gated
-// by ADMIN_API_TOKEN (timing-safe compare, 503 while unconfigured).
+// app/api/v1/[...route]/route.ts, which re-exports one handler per HTTP
+// method delegating to api.fetch per the Next Route Handler convention in
+// node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md).
+// Auth runs on better-auth backed by D1 (server/auth.ts): browser admin
+// callers authenticate via the session cookie, while service callers
+// (Expo, scripts) may use ADMIN_API_TOKEN. See requireAdmin below for the
+// token scope/rotation decision.
 
-type Variables = { adminEmail: string }
+type Variables = {
+  adminEmail: string
+  // Session user id on the session path, "api-token" on the token path.
+  actorId: string
+  // Which credential authenticated this request; recorded in audit summaries.
+  principal: "session" | "api-token"
+}
 
 const api = new Hono<{ Bindings: SummitEnv; Variables: Variables }>().basePath("/api/v1")
 
@@ -44,28 +54,82 @@ function timingSafeEqual(a: string, b: string): boolean {
 async function requireAdmin(c: {
   req: Request
   env: SummitEnv
-  set: (key: "adminEmail", value: string) => void
+  set: (key: "adminEmail" | "actorId" | "principal", value: string) => void
 }) {
   // Service path: shared token (Expo/mobile service callers, scripts).
+  // DECISION (kept, not removed): the bypass stays because headless Expo and
+  // deploy scripts cannot hold a better-auth session cookie. The token is a
+  // single full-admin credential — rotate it on operator offboarding (rotate
+  // in Cloudflare dashboard, update Expo/scripts, redeploy), and prefer
+  // session auth for all browser/portal traffic. Every audit entry below
+  // records which principal authenticated (session email vs api-token) so
+  // token-path writes are distinguishable in the audit log.
   const configured = c.env.ADMIN_API_TOKEN
   const header =
     c.req.headers.get("authorization") ?? c.req.headers.get("x-admin-token") ?? ""
   const supplied = header.startsWith("Bearer ") ? header.slice(7) : header
   if (configured && supplied && timingSafeEqual(supplied, configured)) {
     c.set("adminEmail", "api-token-admin")
+    c.set("actorId", "api-token")
+    c.set("principal", "api-token")
     return null
   }
   // Browser path: better-auth session cookie.
   const identity = await adminIdentity(c.env, c.req)
   if (identity instanceof Response) return identity
   c.set("adminEmail", identity.user.email)
+  c.set("actorId", identity.user.id)
+  c.set("principal", "session")
   return null
+}
+
+function clientIp(request: Request): string {
+  const direct = request.headers.get("cf-connecting-ip")?.trim()
+  if (direct) return direct
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+  return forwarded || "unknown"
+}
+
+// Fixed-window per-key counter persisted in D1 (rateLimits table). Returns
+// true when the request is within budget and consumes one unit, false when
+// the window is exhausted. Best-effort: any D1 error fails open so a
+// database hiccup never turns public writes into 500s.
+async function checkRateLimit(
+  db: D1Database,
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<boolean> {
+  const timestamp = now()
+  try {
+    const row = await db
+      .prepare("SELECT count, windowStart FROM rateLimits WHERE key = ?")
+      .bind(key)
+      .first<{ count: number; windowStart: number }>()
+    if (!row || timestamp - row.windowStart >= windowMs) {
+      await db
+        .prepare(
+          "INSERT INTO rateLimits (key, count, windowStart) VALUES (?, 1, ?) ON CONFLICT(key) DO UPDATE SET count = 1, windowStart = excluded.windowStart"
+        )
+        .bind(key, timestamp)
+        .run()
+      return true
+    }
+    if (row.count >= limit) return false
+    await db
+      .prepare("UPDATE rateLimits SET count = count + 1 WHERE key = ?")
+      .bind(key)
+      .run()
+    return true
+  } catch {
+    return true
+  }
 }
 
 function requireMailSecret(env: SummitEnv, request: Request) {
   const expected = env.MAIL_INGEST_SECRET
   const supplied = request.headers.get("x-mail-ingest-secret")
-  return Boolean(expected) && supplied === expected
+  return Boolean(expected) && Boolean(supplied) && timingSafeEqual(supplied ?? "", expected ?? "")
 }
 
 const bankTransferDefaults = {
@@ -397,6 +461,17 @@ api.post("/submissions", async (c) => {
     return c.json({ accepted: false, reference })
   }
   if (!body.consent) return c.json({ accepted: false, reference })
+  // Per-IP backstop alongside the per-email window below: one IP gets 10
+  // submissions/hour, so a single actor cannot rotate emails to spam the desk.
+  const ipAllowed = await checkRateLimit(
+    c.env.DB,
+    `submissions:ip:${clientIp(c.req.raw)}`,
+    10,
+    3_600_000
+  )
+  if (!ipAllowed) {
+    return c.json({ accepted: false, reference }, 429)
+  }
   const timestamp = now()
   const recent = await c.env.DB.prepare(
     "SELECT createdAt FROM submissions WHERE email = ? ORDER BY createdAt DESC LIMIT 1"
@@ -433,6 +508,13 @@ api.post("/submissions", async (c) => {
 // --- R2 file serving + upload chain (replaces Convex ctx.storage) ---
 
 api.get("/files/:key", async (c) => {
+  // ACCEPTED DECISION (constrain-or-document resolution = document): draft
+  // assets are publicly fetchable by anyone holding the unguessable R2 key
+  // (`images/<uuid>…`, `docs/<uuid>…`). No per-status auth check is applied
+  // here because published pages must hotlink these URLs without a session,
+  // and the random UUID segment is the capability. Do not put sensitive
+  // material in the asset library; sensitivity belongs behind an admin-only
+  // route, not in R2 keys served here.
   const key = decodeURIComponent(c.req.param("key"))
   if (!key || key.includes("..")) return c.json({ error: "Not found." }, 404)
   const object = await c.env.SUMMIT_ASSETS.get(key)
@@ -450,7 +532,7 @@ api.post("/assets/upload", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   let form: FormData
@@ -480,11 +562,11 @@ api.post("/assets/upload", async (c) => {
   )
     .bind(id, key, (file.name || "file").slice(0, 180), file.type, file.size, altText, category, c.get("adminEmail"), timestamp)
     .run()
-  await writeAudit(c.env.DB, { id: "api-token", email: c.get("adminEmail") }, {
+  await writeAudit(c.env.DB, { id: c.get("actorId"), email: c.get("adminEmail") }, {
     action: "upload",
     entityType: "asset",
     entityId: id,
-    summary: `Uploaded ${file.name || "file"}`,
+    summary: `[${c.get("principal")}] Uploaded ${file.name || "file"}`,
   })
   return c.json({
     _id: id,
@@ -503,7 +585,7 @@ api.get("/assets", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   const { results } = await c.env.DB.prepare(
@@ -528,20 +610,55 @@ api.delete("/assets/:id", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   const row = await c.env.DB.prepare("SELECT * FROM assets WHERE id = ?")
     .bind(c.req.param("id"))
     .first<Record<string, unknown>>()
   if (!row) return c.json({ error: "Not found." }, 404)
-  await c.env.SUMMIT_ASSETS.delete(row.r2Key as string)
+  const r2Key = row.r2Key as string
+  // Mirror convex/assets.ts remove(): refuse to orphan content that still
+  // references this key. Checks run before the R2 delete so a 409 leaves
+  // both R2 and D1 untouched.
+  const [
+    cmsReference,
+    bannerReference,
+    regionalReference,
+    organizationReference,
+    mediaCoverReference,
+    mediaFileReference,
+    statementReference,
+  ] = await Promise.all([
+    c.env.DB.prepare("SELECT id FROM cmsEntries WHERE imageR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM homeBanners WHERE imageR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM regionalCountries WHERE imageR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM organizations WHERE logoR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM mediaItems WHERE coverR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM mediaItems WHERE fileR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+    c.env.DB.prepare("SELECT id FROM statements WHERE fileR2Key = ? LIMIT 1").bind(r2Key).first<{ id: string }>(),
+  ])
+  if (
+    cmsReference ||
+    bannerReference ||
+    regionalReference ||
+    organizationReference ||
+    mediaCoverReference ||
+    mediaFileReference ||
+    statementReference
+  ) {
+    return c.json(
+      { error: "This file is attached to published content. Detach it before deleting." },
+      409
+    )
+  }
+  await c.env.SUMMIT_ASSETS.delete(r2Key)
   await c.env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(row.id).run()
-  await writeAudit(c.env.DB, { id: "api-token", email: c.get("adminEmail") }, {
+  await writeAudit(c.env.DB, { id: c.get("actorId"), email: c.get("adminEmail") }, {
     action: "delete",
     entityType: "asset",
     entityId: row.id as string,
-    summary: `Deleted ${row.fileName}`,
+    summary: `[${c.get("principal")}] Deleted ${row.fileName}`,
   })
   return c.json({ deleted: true })
 })
@@ -771,6 +888,18 @@ api.post("/donations/checkout", async (c) => {
   if (!amountCents || amountCents < 500 || amountCents > 10_000_000) {
     return c.json({ error: "Donation amount must be between €5 and €100,000." }, 400)
   }
+  // No per-email signal exists here, so this is a per-IP window only: 10
+  // donation intents/hour per IP (CF-Connecting-IP, else x-forwarded-for).
+  // Generous enough for shared networks, tight enough to blunt intent spam.
+  const ipAllowed = await checkRateLimit(
+    c.env.DB,
+    `donations:ip:${clientIp(c.req.raw)}`,
+    10,
+    3_600_000
+  )
+  if (!ipAllowed) {
+    return c.json({ error: "Too many donation attempts. Try again later." }, 429)
+  }
   const reference = `DON-${Date.now().toString(36).toUpperCase()}`
   const timestamp = now()
   await c.env.DB.prepare(
@@ -801,7 +930,7 @@ api.get("/admin/cms", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   const category = c.req.query("category") ?? ""
@@ -828,7 +957,7 @@ api.post("/admin/cms/save", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   const body = await c.req.json<Record<string, unknown>>().catch(() => null)
@@ -867,11 +996,11 @@ api.post("/admin/cms/save", async (c) => {
       .bind(id, ...values, order, status, asBool(body.featured), timestamp)
       .run()
   }
-  await writeAudit(c.env.DB, { id: "api-token", email: c.get("adminEmail") }, {
+  await writeAudit(c.env.DB, { id: c.get("actorId"), email: c.get("adminEmail") }, {
     action: existing ? "update" : "create",
     entityType: "cmsEntry",
     entityId: id,
-    summary: `${existing ? "Updated" : "Created"} ${str(body.title, 200)}`,
+    summary: `[${c.get("principal")}] ${existing ? "Updated" : "Created"} ${str(body.title, 200)}`,
   })
   return c.json({ _id: id })
 })
@@ -880,18 +1009,18 @@ api.delete("/admin/cms/:id", async (c) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
-    set: (k, v) => c.set(k as "adminEmail", v),
+    set: (k, v) => c.set(k as "adminEmail" | "actorId" | "principal", v),
   })
   if (gate) return gate
   const row = await c.env.DB.prepare("SELECT id, title FROM cmsEntries WHERE id = ?")
     .bind(c.req.param("id"))
     .first<{ id: string; title: string }>()
   if (row) await c.env.DB.prepare("DELETE FROM cmsEntries WHERE id = ?").bind(row.id).run()
-  await writeAudit(c.env.DB, { id: "api-token", email: c.get("adminEmail") }, {
+  await writeAudit(c.env.DB, { id: c.get("actorId"), email: c.get("adminEmail") }, {
     action: "delete",
     entityType: "cmsEntry",
     entityId: c.req.param("id"),
-    summary: `Deleted ${row?.title ?? "content entry"}`,
+    summary: `[${c.get("principal")}] Deleted ${row?.title ?? "content entry"}`,
   })
   return c.json({ deleted: true })
 })

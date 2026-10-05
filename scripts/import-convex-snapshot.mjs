@@ -1,20 +1,90 @@
-// Imports a Convex snapshot export (documents.jsonl + _storage files) into
-// the Cloudflare backend: D1 tables (SQL) + R2 summit-assets objects.
+// Imports a Convex snapshot export (documents.jsonl + _storage files) into the
+// Cloudflare development backend: D1 tables (SQL) + R2 objects.
 // R2 object key == Convex storage id, so D1 *R2Key columns keep the raw id.
 //
+// Production is Admin-owned, so this script targets development only. It
+// hard-fails on the production D1 id/name (summit-db /
+// b9d39325-0be9-4e4b-a935-2d39b6f6512b) and the production bucket
+// (summit-assets), mirroring scripts/refuse-production-seed.mjs. Nothing is
+// written to D1 or R2 by this script: it only emits SQL and an upload script,
+// and it requires an explicit --yes so an import is always a deliberate act.
+//
 // Usage:
-//   node scripts/import-convex-snapshot.mjs <snapshotDir> <outDir>
-// Then:
-//   cf r2 objects put ... (see outDir/r2-upload.sh)
-//   cf d1 query <db-id> --sql "$(cat outDir/<table>.sql)"   (per table file)
+//   node scripts/import-convex-snapshot.mjs <snapshotDir> <outDir> --yes \
+//     [--target dev] [--db <dev-database-id>] [--bucket summit-assets-dev]
+// Then, against development resources only:
+//   cf d1 query <dev-db-id> --sql "$(cat outDir/<table>.sql)"   (per table file)
+//   outDir/r2-upload.sh
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
-import { basename, join, resolve } from "node:path"
+import { join, resolve } from "node:path"
+import {
+  DEVELOPMENT,
+  PRODUCTION,
+  isIsolatedBucket,
+  parseFlags,
+  refuseProductionBucket,
+  refuseProductionDatabase,
+  resolveTarget,
+} from "./d1-target.mjs"
 
-const [snapshotDir, outDir] = process.argv.slice(2).map((a) => resolve(a))
-if (!snapshotDir || !outDir) {
-  console.error("Usage: node scripts/import-convex-snapshot.mjs <snapshotDir> <outDir>")
+const usage = () => {
+  console.error(`Usage: node scripts/import-convex-snapshot.mjs <snapshotDir> <outDir> --yes [options]
+
+  --yes                    Required. Confirms the import target is disposable.
+  --target dev             Development resources (default)
+  --db <uuid>              Development D1 id; default ${DEVELOPMENT.databaseId}
+  --bucket <name>          R2 bucket; default ${DEVELOPMENT.bucket}, must be an isolated *-dev bucket
+
+Production (${PRODUCTION.databaseName} D1 and the ${PRODUCTION.bucket} bucket) is refused.`)
+}
+
+const { flags, positional } = parseFlags(process.argv.slice(2))
+if (flags.help) {
+  usage()
+  process.exit(0)
+}
+
+const [snapshotDirArg, outDirArg] = positional
+if (!snapshotDirArg || !outDirArg) {
+  usage()
   process.exit(1)
 }
+
+// Every guard runs before the output directory or any SQL file is created.
+if (flags.yes !== true) {
+  console.error(
+    "Refusing to import without --yes. The generated SQL replaces development content, so confirm the target is disposable and re-run with --yes."
+  )
+  process.exit(1)
+}
+
+const target = resolveTarget(flags.target ?? "dev")
+if (!target) {
+  console.error("--target must be dev or prod.")
+  process.exit(1)
+}
+// --target prod resolves the production id, so the shared guard refuses it.
+const databaseId = flags.db === undefined ? target.databaseId : String(flags.db)
+refuseProductionDatabase(databaseId)
+
+const bucket = flags.bucket === undefined ? target.bucket : String(flags.bucket)
+refuseProductionBucket(bucket)
+if (!isIsolatedBucket(bucket)) {
+  console.error(
+    `Refusing bucket ${bucket}: this import only writes isolated development buckets, which end in -dev (for example ${DEVELOPMENT.bucket}).`
+  )
+  process.exit(1)
+}
+
+const snapshotDir = resolve(snapshotDirArg)
+const outDir = resolve(outDirArg)
+
+// Backup reminder, printed before anything is written: the SQL emitted below
+// replaces development content, and the upload script replaces development
+// objects, so both targets need a copy first.
+console.warn(
+  `Reminder: back up development D1 (cf d1 export ${databaseId}) and the ${bucket} bucket before applying this import. Take a content fingerprint afterwards: bun run db:fingerprint:dev`
+)
 mkdirSync(outDir, { recursive: true })
 
 const docs = (table) => {
@@ -116,13 +186,17 @@ const uploads = []
 for (const [storageId, file] of storageFiles) {
   const meta = storageMeta.get(storageId) ?? {}
   uploads.push(
-    `cf r2 objects put ${JSON.stringify(storageId)} --bucket-name summit-assets --file ${JSON.stringify(join(snapshotDir, "_storage", file))} --content-type ${JSON.stringify(String(meta.contentType ?? "application/octet-stream"))}`
+    `cf r2 objects put ${JSON.stringify(storageId)} --bucket-name ${bucket} --file ${JSON.stringify(join(snapshotDir, "_storage", file))} --content-type ${JSON.stringify(String(meta.contentType ?? "application/octet-stream"))}`
   )
 }
 writeFileSync(join(outDir, "r2-upload.sh"), `#!/bin/sh\nset -eu\n${uploads.join("\n")}\n`, { mode: 0o755 })
 
+console.log(`Target: D1 ${target.databaseName} (${databaseId}), R2 bucket ${bucket} [${target.target}]`)
 console.log(`Tables: ${Object.keys(sqlFiles).join(", ")}`)
 console.log(`Documents: ${total}, storage files: ${uploads.length}`)
+console.log(
+  `Nothing was written to D1 or R2. Apply ${Object.keys(sqlFiles).length} SQL file(s) to ${target.databaseName} with cf d1 query, then run ${join(outDir, "r2-upload.sh")}.`
+)
 if (missingStorage.size > 0) {
   console.log(`WARNING: ${missingStorage.size} referenced storage ids missing from export: ${[...missingStorage].join(", ")}`)
 }

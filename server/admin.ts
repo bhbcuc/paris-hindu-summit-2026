@@ -550,7 +550,7 @@ admin.post("/media/items/save", async (c) => {
   const sectionSlug = str(body.sectionSlug, 120)
   const title = str(body.title, 300)
   const mediaType = str(body.mediaType, 20)
-  let slug = str(body.slug, 160) || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  const slug = str(body.slug, 160) || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
   if (!sectionSlug || !title) return err("Choose a section and enter a title.", 400)
   if (!slug) return err("Enter a URL slug using letters or numbers.", 400)
   if (!MEDIA_TYPES.has(mediaType)) return err("Unknown media type.", 400)

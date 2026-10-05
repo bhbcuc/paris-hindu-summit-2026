@@ -4,6 +4,10 @@ import PostalMime, { type Address } from "postal-mime"
 
 interface Env {
   CONVEX_MAIL_ENDPOINT: string
+  // TODO: point at https://<worker>/api/v1/mail/inbound once the production
+  // worker URL is known, so inbound mail lands in D1 instead of Convex.
+  // Overrides CONVEX_MAIL_ENDPOINT when set.
+  MAIL_ARCHIVE_ENDPOINT?: string
   FORWARD_TO: string
   MAIL_INGEST_SECRET: string
 }
@@ -27,7 +31,8 @@ function firstMailbox(address: Address | undefined) {
 async function archiveMessage(message: ForwardableEmailMessage, raw: ArrayBuffer, env: Env) {
   const parsed = await PostalMime.parse(raw)
   const sender = firstMailbox(parsed.from)
-  const response = await fetch(env.CONVEX_MAIL_ENDPOINT, {
+  const archiveEndpoint = env.MAIL_ARCHIVE_ENDPOINT || env.CONVEX_MAIL_ENDPOINT
+  const response = await fetch(archiveEndpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json",

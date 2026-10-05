@@ -10,6 +10,9 @@ export interface SummitEnv {
   MAIL_INGEST_SECRET?: string
   BETTER_AUTH_SECRET?: string
   BETTER_AUTH_URL?: string
+  // Comma-separated extra origins trusted by better-auth CORS/CSRF checks
+  // (e.g. preview deployments). Parsed in server/auth.ts.
+  EXTRA_TRUSTED_ORIGINS?: string
   ALLOW_INITIAL_ADMIN_SIGNUP?: string
   RESEND_API_KEY?: string
 }
@@ -64,19 +67,6 @@ export const ALLOWED_UPLOAD_MIME = new Set([
 ])
 
 export const MAX_UPLOAD_BYTES = 20_000_000
-
-// Admin gate. Sessions still live in Convex (better-auth) until the session
-// cutover lands; mutating admin routes stay 503 until then so nothing ships
-// with a weak check. admin-portal continues to use Convex meanwhile.
-export function adminDisabled() {
-  return Response.json(
-    {
-      error:
-        "Admin API is pending the better-auth session cutover to D1. Use the Convex-backed admin portal for now.",
-    },
-    { status: 503 }
-  )
-}
 
 export async function writeAudit(
   db: D1Database,

@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "convex/_generated/**",
     "apps/mail-desk/**",
+    // Build artifacts from the Cloudflare / vinext toolchain:
+    ".cloudflare/**",
+    ".vinext/**",
+    "dist/**",
   ]),
 ])
 
