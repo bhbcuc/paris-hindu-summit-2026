@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -75,7 +75,7 @@ export function HomeBannerCarousel({ banners }: { banners: HomeBanner[] }) {
           aria-label={`${activeIndex + 1} of ${slides.length}: ${current.title}`}
           aria-roledescription="slide"
         >
-          <Image
+          <SmartImage
             key={current._id}
             src={current.imageUrl}
             alt={current.altText}

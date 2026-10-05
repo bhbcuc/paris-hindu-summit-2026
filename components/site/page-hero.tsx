@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import { AudioLinesIcon } from "lucide-react"
 
 type PageHeroProps = {
@@ -36,7 +36,7 @@ export function PageHero({ eyebrow, title, intro, image, loading = false }: Page
         {loading ? (
           <span className="content-skeleton page-hero-skeleton-aside" />
         ) : image ? (
-          <Image src={image} alt="" fill priority sizes="(max-width: 720px) 100vw, 38vw" />
+          <SmartImage src={image} alt="" fill priority sizes="(max-width: 720px) 100vw, 38vw" />
         ) : (
           <>
             <b>PARIS</b>

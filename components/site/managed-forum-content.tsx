@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import { useState } from "react"
 import {
   ArrowRightIcon,
@@ -103,7 +103,7 @@ function PersonPortrait({
   return (
     <div className={`${className} person-portrait`}>
       {image ? (
-        <Image src={image} alt={name} fill sizes={sizes} />
+        <SmartImage src={image} alt={name} fill sizes={sizes} />
       ) : (
         <span className="person-placeholder" aria-label={`Photo of ${name} not yet available`}>
           <UserRoundIcon aria-hidden="true" />

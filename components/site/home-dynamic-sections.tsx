@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import Link from "next/link"
 import { ArrowRightIcon } from "lucide-react"
 
@@ -141,7 +141,7 @@ export function FeaturedSpeakers() {
           <article key={speaker.key}>
             <div>
               {speaker.image ? (
-                <Image
+                <SmartImage
                   src={speaker.image}
                   alt={speaker.name}
                   fill

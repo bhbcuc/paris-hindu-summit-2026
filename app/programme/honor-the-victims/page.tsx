@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import Link from "next/link"
 import { ArrowLeftIcon, ArrowUpRightIcon, MapPinIcon } from "lucide-react"
 
@@ -26,7 +26,7 @@ export default function HonorTheVictimsPage() {
           <div className="drancy-location"><MapPinIcon aria-hidden="true" /><span>Drancy, Paris</span></div>
         </div>
         <figure className="drancy-image-wrap">
-          <Image src="/images/drancy-memorial.jpg" alt="Memorial sculpture and inscribed rail car at the Drancy internment camp memorial" width={585} height={439} priority sizes="(max-width: 900px) 100vw, 48vw" />
+          <SmartImage src="/images/drancy-memorial.jpg" alt="Memorial sculpture and inscribed rail car at the Drancy internment camp memorial" width={585} height={439} priority sizes="(max-width: 900px) 100vw, 48vw" />
           <figcaption>Drancy Memorial · a place of remembrance and witness</figcaption>
         </figure>
       </section>

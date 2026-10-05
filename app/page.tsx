@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import Link from "next/link"
 import {
   ArrowRightIcon,
@@ -227,7 +227,7 @@ export default function HomePage() {
       </section>
 
       <section className="home-support">
-        <Image
+        <SmartImage
           src="/images/paris-night.png"
           alt="Paris at night beside the River Seine"
           fill

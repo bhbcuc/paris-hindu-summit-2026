@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import { BookOpenIcon, LandmarkIcon, ShieldAlertIcon } from "lucide-react"
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -49,7 +49,7 @@ export default function ContextPage() {
         </Accordion>
       </section>
       <section className="image-band">
-        <Image src="/images/river-delta.png" alt="Aerial view of Bangladesh river systems and settlements" fill sizes="100vw" />
+        <SmartImage src="/images/river-delta.png" alt="Aerial view of Bangladesh river systems and settlements" fill sizes="100vw" />
         <div><p className="kicker"><ManagedText slug="context-image-caption" field="eyebrow" fallback="The living record" /></p><h2><ManagedText slug="context-image-caption" field="title" fallback="Behind every data point is a family deciding whether it can stay." /></h2></div>
       </section>
     </>

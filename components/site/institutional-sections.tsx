@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import { ArrowUpRightIcon } from "lucide-react"
 
 import { useEditorialRecord } from "@/components/site/managed-editorial"
@@ -93,7 +93,7 @@ export function PartnerWall() {
             <div className="partner-identity">
               {organization.logoUrl && (
                 <div className="partner-logo-frame">
-                  <Image
+                  <SmartImage
                     src={organization.logoUrl}
                     alt={`${organization.name} logo`}
                     width={120}
@@ -145,7 +145,7 @@ function OrganizationFeature({
       </div>
       <div className="organization-feature-logo">
         {organization.logoUrl ? (
-          <Image
+          <SmartImage
             src={organization.logoUrl}
             alt={`${organization.name} logo`}
             width={260}

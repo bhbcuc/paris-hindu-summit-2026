@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import Link from "next/link"
 import { ArrowUpRightIcon, MailIcon, MapPinIcon, MessageCircleIcon, PhoneIcon } from "lucide-react"
 
@@ -51,7 +51,7 @@ export function SiteFooter() {
       <Separator />
       <div className="footer-grid">
         <div className="footer-brand">
-          <Image
+          <SmartImage
             src={settings?.logoUrl || "/images/witness-flame-logo.png"}
             alt=""
             width={64}

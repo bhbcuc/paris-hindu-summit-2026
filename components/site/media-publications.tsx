@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage } from "@/components/site/smart-image"
 import { useEffect, useState } from "react"
 import {
   ArrowDownToLineIcon,
@@ -188,7 +188,7 @@ export function MediaPublications() {
                             }}
                           >
                             <span className="photo-gallery-image">
-                              <Image
+                              <SmartImage
                                 src={item.fileUrl!}
                                 alt={item.title}
                                 fill
@@ -250,7 +250,7 @@ export function MediaPublications() {
                         <article key={item._id}>
                           <div className="publication-cover">
                             {item.coverUrl ? (
-                              <Image
+                              <SmartImage
                                 src={item.coverUrl}
                                 alt=""
                                 fill
@@ -292,7 +292,7 @@ export function MediaPublications() {
                   <article key={item._id}>
                     <div className="publication-cover">
                       {item.coverUrl ? (
-                        <Image
+                        <SmartImage
                           src={item.coverUrl}
                           alt=""
                           fill
@@ -340,7 +340,7 @@ export function MediaPublications() {
           {activePhoto?.fileUrl && (
             <>
               <div className="photo-lightbox-stage">
-                <Image
+                <SmartImage
                   src={activePhoto.fileUrl}
                   alt={activePhoto.title}
                   fill
