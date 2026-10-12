@@ -1,0 +1,9 @@
+{
+  "name": "paris-hindu-summit-mail-router",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
+}

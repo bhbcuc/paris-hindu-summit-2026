@@ -45,3 +45,7 @@ next-env.d.ts
 .cloudflare/
 .dev.vars
 .env.convex.*
+
+# Mail-router local toolchain (migrated to cf; wrangler kept as local bundler)
+cloudflare/mail-router/node_modules/
+cloudflare/mail-router/.wrangler/
