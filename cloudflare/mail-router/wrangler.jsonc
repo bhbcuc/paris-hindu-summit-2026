@@ -6,6 +6,7 @@
   "workers_dev": false,
   "vars": {
     "CONVEX_MAIL_ENDPOINT": "https://amiable-dogfish-765.convex.site/mail/inbound",
+    "MAIL_ARCHIVE_ENDPOINT": "https://summit-website.venue-mind.workers.dev/api/v1/mail/inbound",
     "FORWARD_TO": "seyamalam41@gmail.com"
   }
 }
