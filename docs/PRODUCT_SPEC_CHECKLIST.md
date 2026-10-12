@@ -49,6 +49,15 @@ authority on delivered product behaviour.
   - Fingerprint comparison and migration-runner scripts have been added so D1
     releases can be gated on content-table fingerprints the same way Convex
     releases were.
+  - Release of 12 October 2026 (commit `94131fb`): the payment-removal batch
+    is live on both Workers (`summit-website` version `d69f9052`,
+    `summit-website-dev` version `41025459`). D1 prod ledger is at
+    `0005_drop_donations.sql` (`0004_rate_limits.sql` plus `0005` applied via
+    `cf d1 migrations apply` after a SELECT-only safety dump).
+    `/api/v1/donation-tiers` is 404 on both Workers and the
+    `donations`/`donationTiers` tables no longer exist in prod. The
+    post-release fingerprint shows no drift
+    (`25 tables, 1588 rows, digest e1d83796`). Vercel/Convex stays online.
 
 For the full delivered-feature inventory, see
 [`COMPLETED_WORK_CHECKLIST.md`](COMPLETED_WORK_CHECKLIST.md).
