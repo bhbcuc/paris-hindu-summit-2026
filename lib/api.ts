@@ -559,6 +559,18 @@ interface AdminApiResponses {
   "/mail/contacts": AdminMailContact[]
 }
 
+const adminListeners = new Set<() => void>()
+
+export function mutateAdminApi() {
+  for (const listener of Array.from(adminListeners)) {
+    try {
+      listener()
+    } catch {
+      // ignore
+    }
+  }
+}
+
 export function useAdminApi<Path extends keyof AdminApiResponses>(
   path: Path,
   params?: Record<string, string | number | boolean>
@@ -566,6 +578,15 @@ export function useAdminApi<Path extends keyof AdminApiResponses>(
   const key = `/admin${path}${toQuery(params)}`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(undefined)
+  const [revision, setRevision] = useState(0)
+
+  useEffect(() => {
+    const handleMutate = () => setRevision((r) => r + 1)
+    adminListeners.add(handleMutate)
+    return () => {
+      adminListeners.delete(handleMutate)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -584,13 +605,15 @@ export function useAdminApi<Path extends keyof AdminApiResponses>(
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
+  }, [key, revision])
 
   return data
 }
 
 export async function apiAdminPost<T>(path: string, body: unknown): Promise<T> {
-  return apiPost<T>(`/admin${path}`, body)
+  const result = await apiPost<T>(`/admin${path}`, body)
+  mutateAdminApi()
+  return result
 }
 
 export async function apiAdminDelete(path: string, id: string): Promise<null> {
@@ -603,6 +626,7 @@ export async function apiAdminDelete(path: string, id: string): Promise<null> {
       (detail as { error?: string } | null)?.error ?? `Request failed (${response.status})`
     )
   }
+  mutateAdminApi()
   return null
 }
 

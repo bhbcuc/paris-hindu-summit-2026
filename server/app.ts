@@ -1,4 +1,4 @@
-import { Hono } from "hono"
+import { Hono, type Context } from "hono"
 
 import admin from "./admin"
 import { adminIdentity } from "./auth"
@@ -35,6 +35,8 @@ type Variables = {
   // Which credential authenticated this request; recorded in audit summaries.
   principal: "session" | "api-token"
 }
+
+type AppContext = Context<{ Bindings: SummitEnv; Variables: Variables }>
 
 const api = new Hono<{ Bindings: SummitEnv; Variables: Variables }>().basePath("/api/v1")
 
@@ -511,7 +513,7 @@ api.get("/files/:key", async (c) => {
 
 const ASSET_CATEGORIES = new Set(["logo", "portrait", "media", "document", "general"])
 
-api.post("/assets/upload", async (c) => {
+const uploadAssetHandler = async (c: AppContext) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
@@ -562,9 +564,9 @@ api.post("/assets/upload", async (c) => {
     url: fileUrl(key),
     uploadedAt: timestamp,
   })
-})
+}
 
-api.get("/assets", async (c) => {
+const getAssetsHandler = async (c: AppContext) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
@@ -587,9 +589,9 @@ api.get("/assets", async (c) => {
       uploadedAt: item.uploadedAt,
     }))
   )
-})
+}
 
-api.delete("/assets/:id", async (c) => {
+const deleteAssetHandler = async (c: AppContext) => {
   const gate = await requireAdmin({
     req: c.req.raw,
     env: c.env,
@@ -644,7 +646,14 @@ api.delete("/assets/:id", async (c) => {
     summary: `[${c.get("principal")}] Deleted ${row.fileName}`,
   })
   return c.json({ deleted: true })
-})
+}
+
+api.post("/assets/upload", uploadAssetHandler)
+api.post("/admin/assets/upload", uploadAssetHandler)
+api.get("/assets", getAssetsHandler)
+api.get("/admin/assets", getAssetsHandler)
+api.delete("/assets/:id", deleteAssetHandler)
+api.delete("/admin/assets/:id", deleteAssetHandler)
 
 function inferOrganizationRole(name: string, slug = "") {
   const normalized = name.toLowerCase()

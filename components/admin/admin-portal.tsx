@@ -1,7 +1,7 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, @next/next/no-img-element */
 
-import { apiAdminDelete, apiAdminPost, useAdminApi, useApi } from "@/lib/api"
+import { apiAdminDelete, apiAdminPost, mutateAdminApi, useAdminApi, useApi } from "@/lib/api"
 import {
   ArchiveIcon,
   BarChart3Icon,
@@ -140,6 +140,19 @@ type ContentDraft = Omit<typeof blankContent, "status"> & {
   status: "draft" | "published"
 }
 
+async function handleAdminSignOut() {
+  try {
+    await Promise.race([
+      authClient.signOut(),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ])
+  } catch {
+    // ignore
+  }
+  mutateAdminApi()
+  window.location.href = "/admin"
+}
+
 function AuthGate() {
   const access = useAdminApi('/access')
   const bootstrap = () => apiAdminPost('/bootstrap', {})
@@ -169,7 +182,10 @@ function AuthGate() {
           ? await authClient.signIn.email({ email, password })
           : await authClient.signUp.email({ email, password, name })
       if (result.error) toast.error(result.error.message)
-      else toast.success(mode === "signin" ? "Signed in." : "Account created.")
+      else {
+        toast.success(mode === "signin" ? "Signed in." : "Account created.")
+        mutateAdminApi()
+      }
     } catch {
       toast.error("Authentication could not be completed. Check your details and try again.")
     } finally {
@@ -265,13 +281,13 @@ function AuthGate() {
         </section>
         <section className="admin-auth-card">
           {access.bootstrapAvailable ? (
-            <Button onClick={async () => { await bootstrap(); toast.success("Administrator workspace created.") }}>
+            <Button onClick={async () => { await bootstrap(); toast.success("Administrator workspace created."); mutateAdminApi() }}>
               <ShieldCheckIcon /> Become administrator
             </Button>
           ) : (
             <Badge variant="outline">Access pending</Badge>
           )}
-          <Button variant="outline" onClick={() => authClient.signOut()}>
+          <Button variant="outline" onClick={handleAdminSignOut}>
             <LogOutIcon /> Sign out
           </Button>
         </section>
@@ -313,7 +329,7 @@ function Workspace({ admin }: { admin: { name: string; email: string; role: Admi
         </nav>
         <div className="admin-profile">
           <b>{admin.name}</b><small>{admin.role}</small>
-          <button onClick={() => authClient.signOut()}><LogOutIcon /> Sign out</button>
+          <button onClick={handleAdminSignOut}><LogOutIcon /> Sign out</button>
         </div>
       </aside>
       <main className="admin-stage">
@@ -1541,6 +1557,7 @@ async function uploadAdminAsset({
     throw new Error(detail?.error ?? "The file could not be uploaded.")
   }
   const result = await response.json() as { storageId:string }
+  mutateAdminApi()
   return result.storageId
 }
 
@@ -2671,6 +2688,7 @@ function AssetsPanel() {
       throw new Error(detail?.error ?? "The upload was rejected. Please try again.")
     }
     toast.success("Asset uploaded.")
+    mutateAdminApi()
   }
   return (
     <section className="admin-panel">
