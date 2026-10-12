@@ -32,10 +32,12 @@ authority on delivered product behaviour.
   uses the Hono admin mail API (`/api/v1/admin/mail/*`) for messages,
   allowance, contacts, read state, deletion, and sending via Resend. It no
   longer imports `convex/react` or reads Convex data.
-- Inbound mail dual-archives during the interim: the mail router posts every
-  message to both Convex and D1 once `MAIL_ARCHIVE_ENDPOINT` is configured, so
-  neither backend misses mail. The same `MAIL_INGEST_SECRET` value must be set
-  in both backends.
+- Inbound mail dual-archives during the interim: the mail router (deployed
+  12 October 2026, version `bbf1f315`, migrated from wrangler.jsonc to cf)
+  posts every message to both Convex and D1 (`MAIL_ARCHIVE_ENDPOINT` set to
+  the prod Worker inbound route), so neither backend misses mail. The same
+  `MAIL_INGEST_SECRET` value must be set in both backends — verify with a
+  test email landing in the D1 Mail Desk.
 - Known issues and open items on this branch:
   - R2 image optimizer fix in progress. The Cloudflare Images optimizer wiring in
     `vite.config.ts` is not yet settled; verify rendering and dimensions of managed
