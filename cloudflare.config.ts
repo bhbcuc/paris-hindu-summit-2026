@@ -13,6 +13,8 @@ export default defineConfig(({ mode, isPreview }) => {
       compatibilityDate: "2026-10-04",
       compatibilityFlags: ["nodejs_compat"],
       assets: { notFoundHandling: "none" },
+      domains: dev ? [] : ["parishindusummit.org", "www.parishindusummit.org"],
+      workersDev: true,
       observability: {
         enabled: true,
         logs: {
