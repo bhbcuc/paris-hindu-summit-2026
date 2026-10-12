@@ -4,10 +4,8 @@
   "version": "1.0.0",
   "dependencies": {
     "@better-auth/expo": "1.6.15",
-    "@convex-dev/better-auth": "^0.12.5",
     "@expo/ui": "~57.0.9",
     "better-auth": "1.6.15",
-    "convex": "^1.43.0",
     "expo": "~57.0.10",
     "expo-constants": "~57.0.9",
     "expo-device": "~57.0.1",

@@ -1,9 +1,10 @@
-export const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL ?? ""
-export const CONVEX_SITE_URL = process.env.EXPO_PUBLIC_CONVEX_SITE_URL ?? ""
-export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL ?? "https://www.parishindusummit.org"
+// Cloudflare Worker origin serving the Hono API (/api/v1/*) and better-auth
+// (/api/auth/*). Development uses the summit-website-dev Worker, production
+// the summit-website Worker.
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
 export function assertConfiguration() {
-  if (!CONVEX_URL || !CONVEX_SITE_URL) {
-    throw new Error("Set EXPO_PUBLIC_CONVEX_URL and EXPO_PUBLIC_CONVEX_SITE_URL before starting the app.")
+  if (!API_URL) {
+    throw new Error("Set EXPO_PUBLIC_API_URL to the Cloudflare Worker origin before starting the app.")
   }
 }

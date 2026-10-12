@@ -9,7 +9,6 @@ import {
   BookOpenIcon,
   BookUserIcon,
   CheckCircle2Icon,
-  CircleDollarSignIcon,
   FileTextIcon,
   Globe2Icon,
   EyeIcon,
@@ -85,7 +84,6 @@ const operationPanels = [
   ["dashboard", "Overview", LayoutDashboardIcon],
   ["mail", "Mail desk", MailIcon],
   ["inbox", "Forms inbox", InboxIcon],
-  ["donations", "Donations", CircleDollarSignIcon],
   ["assets", "Media library", ImageIcon],
   ["team", "Team access", UserCogIcon],
   ["audit", "Activity", ArchiveIcon],
@@ -192,7 +190,7 @@ function AuthGate() {
           <h1>The public record starts behind this door.</h1>
           <p>
             Edit the summit, receive enquiries, publish regional briefings, and
-            monitor donations from one controlled workspace.
+            manage correspondence from one controlled workspace.
           </p>
           <div className="auth-pulse"><span /> Better Auth + managed content store</div>
         </section>
@@ -333,7 +331,6 @@ function Workspace({ admin }: { admin: { name: string; email: string; role: Admi
               {operation === "mail" && <MailDeskPanel />}
               {operation === "team" && <TeamAccessPanel canManage={admin.role === "administrator"} />}
               {operation === "inbox" && <InboxPanel />}
-              {operation === "donations" && <DonationsPanel />}
               {operation === "assets" && <AssetsPanel />}
               {operation === "audit" && <AuditPanel />}
             </div>
@@ -972,7 +969,6 @@ function Dashboard() {
   const stats = [
     ["Content records", data.content, BlocksIcon],
     ["Form submissions", data.submissions, InboxIcon],
-    ["Donation records", data.donations, CircleDollarSignIcon],
     ["Managed assets", data.assets, ImageIcon],
   ] as const
   return (
@@ -2647,39 +2643,6 @@ function ChartsAdmin() {
     <RecordCards title="Chart series" copy="Titles, context, units and source citations." rows={data?.series.map((row) => ({ ...row, name:row.title }))} fields={["slug","title","eyebrow","description","sourceLabel","sourceUrl","unit","order","status"]} blank={{ slug:"",title:"",eyebrow:"",description:"",sourceLabel:"",sourceUrl:"",unit:"",order:50,status:"draft" }} onSave={saveSeries} onRemove={removeSeries} />
     <RecordCards title="Chart points" copy="Editable periods and validated non-negative numeric values." rows={data?.points.map((row) => ({ ...row, name:row.label }))} fields={["seriesSlug","label","sublabel","value","order"]} blank={{ seriesSlug:data?.series[0]?.slug ?? "population-share",label:"",sublabel:"",value:0,order:50 }} onSave={savePoint} onRemove={removePoint} />
   </section>
-}
-
-function DonationsPanel() {
-  const donations = useAdminApi('/donations')
-  const tiers = useAdminApi('/donation-tiers')
-  const saveTier = (args: any) => apiAdminPost('/donation-tiers/save', args)
-  const total = useMemo(() => donations?.filter((d) => d.status === "paid" || d.status === "demo").reduce((sum, d) => sum + d.amountCents, 0) ?? 0, [donations])
-  return (
-    <section className="admin-panel">
-      <PanelTitle eyebrow="Donation readiness" title="SSLCOMMERZ selected for launch." copy="Contributions remain in demonstration mode while the approved SSLCOMMERZ merchant account and live integration are completed." />
-      <div className="donation-total"><span>Recorded volume</span><b>€{(total / 100).toLocaleString()}</b><small>paid + demo</small></div>
-      <h3 className="admin-subhead">Donation levels</h3>
-      <div className="tier-grid">
-        {tiers?.map((tier) => <TierEditor key={tier._id} tier={tier} onSave={saveTier} />)}
-      </div>
-      <h3 className="admin-subhead">Contribution ledger</h3>
-      <div className="admin-list">
-        {donations?.length === 0 && <EmptyCopy text="No contributions recorded yet." />}
-        {donations?.map((item) => <div key={item._id}><Badge>{item.status}</Badge><b>{item.donorName || "Anonymous"}</b><span>{item.reference}</span><strong>€{(item.amountCents/100).toFixed(2)}</strong></div>)}
-      </div>
-    </section>
-  )
-}
-
-function TierEditor({ tier, onSave }: { tier:any; onSave:(args:any)=>Promise<any> }) {
-  const [draft, setDraft] = useState(tier)
-  return <article>
-    <div className="tier-card-top"><Badge variant="outline">{draft.status}</Badge><Switch checked={draft.status === "published"} onCheckedChange={(value) => setDraft({ ...draft, status:value ? "published" : "draft" })} /></div>
-    <Field label="Tier label" value={draft.label} onValueChange={(value) => setDraft({ ...draft, label:value })} />
-    {!draft.customAmount && <Field label="Euro amount" type="number" value={String((draft.amountCents ?? 0)/100)} onValueChange={(value) => setDraft({ ...draft, amountCents:Math.round(Number(value)*100) })} />}
-    <Field label="Description" value={draft.description} multiline onValueChange={(value) => setDraft({ ...draft, description:value })} />
-    <Button variant="outline" onClick={async () => { const { _creationTime, updatedAt, stripePriceId, ...value } = draft; void _creationTime; void updatedAt; void stripePriceId; await onSave({ ...value, id:tier._id }); toast.success(`${draft.label} updated.`) }}><SaveIcon /> Save tier</Button>
-  </article>
 }
 
 function AssetsPanel() {

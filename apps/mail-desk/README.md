@@ -1,6 +1,6 @@
 # Paris Hindu Summit Mail Desk
 
-A focused Expo app for the Paris Hindu Summit 2026 mail team. It uses the same Better Auth accounts, Convex data, role checks, Brevo delivery endpoint, contacts, and message history as the website administration panel.
+A focused Expo app for the Paris Hindu Summit 2026 mail team. It uses the same Better Auth accounts, Cloudflare D1 mail data, role checks, Resend delivery, contacts, and message history as the website administration panel, through the Hono admin mail API on the Summit Worker (`/api/v1/admin/mail/*`).
 
 ## Local setup
 
@@ -8,7 +8,7 @@ A focused Expo app for the Paris Hindu Summit 2026 mail team. It uses the same B
 2. Install dependencies with `bun install`.
 3. Start with `bun start`, then open iOS, Android, or web from Expo.
 
-The committed example points at the production Summit backend so authorized users see the real shared mailbox. Use a development Convex deployment in `.env.local` when testing data-changing work.
+Set `EXPO_PUBLIC_API_URL` to the Worker origin: the `summit-website-dev` Worker for everyday work, the `summit-website` Worker only when an authorized operator needs the real shared mailbox. Use the development Worker in `.env.local` when testing data-changing work.
 
 ## Access
 

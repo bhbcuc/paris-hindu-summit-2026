@@ -421,24 +421,7 @@ api.get("/statements", async (c) => {
   )
 })
 
-api.get("/donation-tiers", async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT * FROM donationTiers WHERE status = 'published' ORDER BY "order" ASC LIMIT 20`
-  ).all<Record<string, unknown>>()
-  return c.json(
-    results.map((item) => ({
-      _id: item.id,
-      slug: item.slug,
-      label: item.label,
-      amountCents: item.amountCents ?? null,
-      description: item.description,
-      customAmount: fromBool(item.customAmount as number),
-      order: item.order,
-    }))
-  )
-})
-
-// --- Public writes (mirror convex/forms + donations) ---
+// --- Public writes (mirror convex/forms) ---
 
 const SUBMISSION_TYPES = new Set([
   "registration", "support", "contact", "sponsorship", "volunteer", "media",
@@ -860,62 +843,6 @@ api.post("/mail/delivery", async (c) => {
     })
   }
   return c.json(results)
-})
-
-// --- Donation intentions (bank transfer only; online payments removed) ---
-
-api.post("/donations/checkout", async (c) => {
-  let body: Record<string, unknown>
-  try {
-    body = await c.req.json()
-  } catch {
-    return c.json({ error: "Invalid request." }, 400)
-  }
-  const tier = await c.env.DB.prepare(
-    "SELECT label, amountCents, description, customAmount FROM donationTiers WHERE id = ? AND status = 'published'"
-  )
-    .bind(str(body.tierId, 100))
-    .first<{
-      label: string
-      amountCents: number | null
-      description: string
-      customAmount: number
-    }>()
-  if (!tier) return c.json({ error: "Donation tier is unavailable." }, 400)
-  const customCents =
-    typeof body.customAmountCents === "number" ? Math.floor(body.customAmountCents) : NaN
-  const amountCents = tier.customAmount ? customCents : tier.amountCents
-  if (!amountCents || amountCents < 500 || amountCents > 10_000_000) {
-    return c.json({ error: "Donation amount must be between €5 and €100,000." }, 400)
-  }
-  // No per-email signal exists here, so this is a per-IP window only: 10
-  // donation intents/hour per IP (CF-Connecting-IP, else x-forwarded-for).
-  // Generous enough for shared networks, tight enough to blunt intent spam.
-  const ipAllowed = await checkRateLimit(
-    c.env.DB,
-    `donations:ip:${clientIp(c.req.raw)}`,
-    10,
-    3_600_000
-  )
-  if (!ipAllowed) {
-    return c.json({ error: "Too many donation attempts. Try again later." }, 429)
-  }
-  const reference = `DON-${Date.now().toString(36).toUpperCase()}`
-  const timestamp = now()
-  await c.env.DB.prepare(
-    "INSERT INTO donations (id, reference, donorName, donorEmail, amountCents, currency, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'eur', 'pending', ?, ?)"
-  )
-    .bind(
-      newId(),
-      reference,
-      str(body.donorName, 120),
-      str(body.donorEmail, 240).toLowerCase(),
-      amountCents,
-      timestamp,
-      timestamp
-    )
-    .run()
-  return c.json({ mode: "bank-transfer", url: null, reference })
 })
 
 // --- Admin mutations (gated by ADMIN_API_TOKEN) ---

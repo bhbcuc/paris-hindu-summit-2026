@@ -14,8 +14,8 @@ import type { SummitEnv } from "./db"
 
 // better-auth on Workers with D1 (replaces @convex-dev/better-auth).
 // Sessions/users/accounts were imported from the Convex snapshot, so existing
-// logins keep working as long as BETTER_AUTH_SECRET matches. The Expo mobile
-// app still authenticates against the Convex deployment (untouched).
+// logins keep working as long as BETTER_AUTH_SECRET matches. The Expo mail-desk
+// app authenticates against this Worker via the same /api/auth/* routes.
 
 interface AuthTables {
   user: {
@@ -123,6 +123,8 @@ const TRUSTED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3111",
+  // Expo mail-desk app scheme (matches apps/mail-desk/app.json).
+  "parishindusummitmail://",
 ]
 
 export function getAuth(env: SummitEnv, origin: string) {

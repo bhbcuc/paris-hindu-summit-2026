@@ -1819,79 +1819,6 @@
   padding-top: 0.5rem;
 }
 
-.donation-total {
-  padding: 34px;
-  color: #fff;
-  background: #102e6f;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-}
-
-.donation-total b {
-  font: 850 clamp(60px, 8vw, 118px) / 0.75 var(--font-body);
-  letter-spacing: -0.08em;
-}
-
-.donation-total small {
-  grid-column: 2;
-  color: #a9bbdc;
-  text-align: right;
-  font-size: 9px;
-}
-
-.admin-subhead {
-  margin: 46px 0 19px;
-  text-transform: uppercase;
-}
-
-.tier-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid #244a92;
-}
-
-.tier-grid article {
-  padding: 21px;
-  border-right: 1px solid #244a92;
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-}
-
-.tier-grid article:last-child {
-  border-right: 0;
-}
-
-.tier-grid h3 {
-  margin: 30px 0 8px;
-}
-
-.tier-grid b {
-  font-size: 29px;
-}
-
-.tier-grid p {
-  min-height: 68px;
-  color: #667287;
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-.tier-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tier-grid textarea {
-  min-height: 90px;
-}
-
-.tier-grid [data-slot="button"] {
-  margin-top: auto;
-}
-
 .asset-drop {
   min-height: 210px;
   position: relative;
@@ -2128,13 +2055,11 @@
     display: none;
   }
 
-  .admin-stat-grid,
-  .tier-grid {
+  .admin-stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .admin-stat-grid article:nth-child(2),
-  .tier-grid article:nth-child(2) {
+  .admin-stat-grid article:nth-child(2) {
     border-right: 0;
   }
 
@@ -2278,7 +2203,6 @@
   .admin-form-grid,
   .admin-inbox,
   .admin-stat-grid,
-  .tier-grid,
   .asset-grid {
     grid-template-columns: 1fr;
   }
@@ -2304,18 +2228,6 @@
 
   .admin-list span {
     display: none;
-  }
-
-  .donation-total {
-    grid-template-columns: 1fr;
-  }
-
-  .donation-total b {
-    margin-top: 28px;
-  }
-
-  .donation-total small {
-    grid-column: 1;
   }
 
   .admin-fieldset {

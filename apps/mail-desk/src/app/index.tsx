@@ -1,5 +1,3 @@
-import { api } from "../../../../convex/_generated/api"
-import { useQuery } from "convex/react"
 import { Link, router } from "expo-router"
 import { useMemo, useState } from "react"
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native"
@@ -7,6 +5,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View 
 import { AuthenticatedScreen } from "@/components/authenticated-screen"
 import { NativeButton } from "@/components/native-button"
 import { Card, Screen } from "@/components/screen"
+import { useMailApi, type MailAllowance, type MailMessage } from "@/lib/api"
 import { authClient } from "@/lib/auth-client"
 import { palette, useSummitTheme } from "@/theme"
 
@@ -20,8 +19,8 @@ export default function InboxRoute() {
 
 function InboxScreen() {
   const theme = useSummitTheme()
-  const messages = useQuery(api.mail.listMessages)
-  const allowance = useQuery(api.mail.dailyAllowance)
+  const { data: messages, refresh: refreshMessages } = useMailApi<MailMessage[]>("/mail/messages")
+  const { data: allowance, refresh: refreshAllowance } = useMailApi<MailAllowance>("/mail/allowance")
   const [search, setSearch] = useState("")
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -37,7 +36,7 @@ function InboxScreen() {
           data={filtered}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={messages === undefined} tintColor={palette.gold} />}
+          refreshControl={<RefreshControl refreshing={messages === undefined} tintColor={palette.gold} onRefresh={() => { refreshMessages(); refreshAllowance() }} />}
           ListHeaderComponent={<>
             <View style={styles.brandRow}><View><Text style={[styles.kicker, { color: palette.gold }]}>SUMMIT CORRESPONDENCE</Text><Text style={[styles.heading, { color: theme.text }]}>Inbox</Text></View><View style={styles.actions}><Link href="/contacts" asChild><Pressable><Text style={{ color: palette.gold, fontWeight: "700" }}>Contacts</Text></Pressable></Link><Pressable onPress={() => authClient.signOut()}><Text style={{ color: theme.muted }}>Sign out</Text></Pressable></View></View>
             <Card style={styles.stats}><View><Text style={[styles.statValue, { color: theme.text }]}>{unread}</Text><Text style={[styles.statLabel, { color: theme.muted }]}>Unread</Text></View><View style={styles.divider} /><View><Text style={[styles.statValue, { color: theme.text }]}>{allowance?.remaining ?? "—"}</Text><Text style={[styles.statLabel, { color: theme.muted }]}>of {allowance?.limit ?? 300} left today</Text></View><View style={styles.compose}><NativeButton compact label="Compose" onPress={() => router.push("/compose")} /></View></Card>

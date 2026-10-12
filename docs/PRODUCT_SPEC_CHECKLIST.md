@@ -1,6 +1,6 @@
 # Product specification checklist
 
-Last reviewed: 5 October 2026
+Last reviewed: 12 October 2026
 Source of truth: `Paris_Website_Spec.pdf`, supplied 26 July 2026
 Target launch: August 2026
 Event: 3–4 October 2026
@@ -16,16 +16,26 @@ The backend is mid-migration and currently dual-backend. This section is the
 status record for that interim period; the feature sections below remain the
 authority on delivered product behaviour.
 
-- Dual-backend, interim: the web app reads and writes content through a Hono API
-  on Cloudflare Workers backed by D1 (content, submissions, donations, audit) and
-  R2 (images and files). `convex/` is retained and still serves the live Vercel
-  production deployment and the Expo mail-desk app. Neither backend is scheduled
-  for removal on this branch.
-- Payment decision recorded: donations are **bank-transfer only** for now. The
-  donation journey stays in demonstration mode, the inactive Stripe prototype is
-  gone, and SSLCOMMERZ implementation remains deferred and pending merchant
-  confirmation of currencies, international-card acceptance, settlement, and
-  foreign-donation compliance.
+- Dual-backend, interim: the web app and the Expo mail-desk app read and write
+  content through a Hono API on Cloudflare Workers backed by D1 (content,
+  submissions, audit) and R2 (images and files). `convex/` is retained and
+  still serves the live Vercel production deployment only. Neither backend is
+  scheduled for removal on this branch; Vercel/Convex stays online until the
+  Cloudflare system is verified fully operational.
+- Payment decision recorded (organiser decision, October 2026): online payments
+  are permanently out of scope. The `/donate` page is bank-transfer information
+  only; the tier/checkout/ledger machinery is removed from the Worker, the web
+  UI, and D1 (`db/migrations/0005_drop_donations.sql`). The `convex/` Stripe
+  prototype stays untouched until the Convex cutover. Do not reintroduce any
+  payment provider on either stack.
+- Expo mail-desk migrated: the app authenticates against Worker better-auth and
+  uses the Hono admin mail API (`/api/v1/admin/mail/*`) for messages,
+  allowance, contacts, read state, deletion, and sending via Resend. It no
+  longer imports `convex/react` or reads Convex data.
+- Inbound mail dual-archives during the interim: the mail router posts every
+  message to both Convex and D1 once `MAIL_ARCHIVE_ENDPOINT` is configured, so
+  neither backend misses mail. The same `MAIL_INGEST_SECRET` value must be set
+  in both backends.
 - Known issues and open items on this branch:
   - R2 image optimizer fix in progress. The Cloudflare Images optimizer wiring in
     `vite.config.ts` is not yet settled; verify rendering and dimensions of managed
@@ -64,7 +74,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
   production and the Expo mail desk. Store the backend's file IDs in records and
   resolve URLs at read time on whichever store is in use.
 - [x] Public content changes must publish without a new frontend deployment.
-- [x] SSLCOMMERZ is the selected payment provider for the initial donation launch. Polar is excluded, and Stripe is deferred. `Interim (5 October 2026)`: the Worker/D1 donation path is bank-transfer only with the Stripe prototype removed from `server/`; `convex/stripe.ts` and the `stripe` dependency are retained while live Vercel production still runs on Convex. SSLCOMMERZ stays deferred pending merchant confirmation.
+- [x] Online payments are permanently out of scope. SSLCOMMERZ, Stripe, Polar, and any other provider must not be (re)introduced on either stack. `Interim (12 October 2026)`: the Cloudflare `/donate` page is bank-transfer information only with no checkout or ledger; `convex/stripe.ts` and the `stripe` dependency are retained untouched while live Vercel production still runs on Convex, and are removed at cutover.
 - [x] Registration and donation entry points remain visible in desktop and mobile navigation.
 - [x] Working delivery decision: retain the complete homepage plus detail pages for deep content and SEO.
 - [x] Public brand is “Paris Hindu Summit” with the subtitle “Global Forum on Religious Freedom and Hindu Minority Rights”.
@@ -108,7 +118,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] The former homepage Challenges card section was removed by client request.
 - [x] Beyond Bangladesh includes Pakistan, Afghanistan, Myanmar, and Nepal.
 - [x] Regional cards are backed by an extensible Convex country model.
-- [x] Dedicated animated Donate and Support pages with server-backed demo behaviour. `Partial`: collection is bank-transfer only for now; the inactive Stripe prototype has been removed, so SSLCOMMERZ must be built from scratch before any live collection.
+- [x] Dedicated animated Donate and Support pages. The Donate page presents admin-managed bank-transfer information only; there is no checkout, tier selection, or contribution ledger.
 - [x] Full persistent Registration section with required fields, consent, reference, and admin inbox workflow.
 - [x] Footer foundation.
 - [x] Footer navigation, managed email, registration, donate, legal links, and recognisable Facebook, X/Twitter, Instagram, LinkedIn, and YouTube icons.
@@ -146,20 +156,16 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Privacy draft, consent language, honeypot and per-email rate protection, admin reference and inbox workflow exist. `Partial`: client approval, retention period and external email notifications remain.
 - [x] Header, mobile menu, Engage and footer registration links reach the registration route.
 
-## Donation and SSLCOMMERZ
+## Donations (bank-transfer information only)
 
-- [x] Demonstration donation flow exists and records demo contributions in Convex.
-- [x] Donation headings and supporting copy are admin-editable.
-- [x] Admin-managed tiers for €25, €100, €500, and Other amount.
-- [x] Provider decision: use SSLCOMMERZ for the initial launch, including local Bangladeshi payments and any international card acceptance approved for the merchant account.
-- [x] Polar is excluded because its acceptable-use rules prohibit donations, crowdfunding, and sponsorship collection.
-- [x] Stripe is deferred; its inactive prototype code has been removed from the Worker/D1 path and must not be reintroduced as the launch payment integration. `Interim (5 October 2026)`: bank transfer is the only contribution route in the Worker; `convex/stripe.ts` stays until the Convex cutover is signed off.
-- [ ] Implement SSLCOMMERZ session initiation, signed validation/IPN handling, server-side amount verification, and payment-status reconciliation.
-- [ ] Confirm the merchant account’s approved currencies, international-card acceptance, settlement route, and foreign-donation compliance before enabling live collection.
-- [x] Custom amount has client and server minimum/maximum validation.
-- [x] A clear demonstration result state exists. `Partial`: the Stripe return flow is gone, so SSLCOMMERZ success, failure, and cancellation handling still has to be built.
-- [ ] Donation receipt and organiser notification.
-- [ ] Currency, tax/charity wording, refund policy, privacy wording, and legal entity are approved before activation.
+Organiser decision, October 2026: online payments are permanently out of
+scope. The former provider, checkout, tier, ledger, receipt, and activation
+items are closed as out of scope rather than pending.
+
+- [x] Donation headings, supporting copy, and both summit bank accounts are admin-editable and published on `/donate`.
+- [x] No checkout, tier selection, contribution ledger, or provider integration exists on the Cloudflare stack.
+- [x] Stripe, SSLCOMMERZ, Polar, and any other payment provider must not be (re)introduced on either stack.
+- [x] `Interim (12 October 2026)`: `convex/stripe.ts`, the Convex `/stripe/webhook` route, and the `stripe` dependency stay untouched while live Vercel production runs on Convex; they are removed at cutover, not before.
 
 ## Admin panel
 
@@ -180,7 +186,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Programme, people, regional, partner, media, engagement, support, homepage evidence cards, evidence charts, and extended content editors are available beside their corresponding live pages.
 - [x] The Evidence Charts Admin entry previews the matching homepage chart block directly instead of an unrelated section of the Context page.
 - [x] Forms, donations, media storage, team access, dashboard metrics, and activity are retained in a separate Operations workspace.
-- [x] Mail Desk archives routed inbound email in Convex, supports read state and threading metadata, and sends authenticated replies from `info@parishindusummit.org` through a server-only SMTP route.
+- [x] Mail Desk archives routed inbound email in D1, supports read state and threading metadata, and sends authenticated replies from `info@parishindusummit.org` through Resend. `Interim (12 October 2026)`: the mail router dual-archives to Convex and D1, so live Vercel production keeps its copy too; the Expo mail-desk app uses the same D1-backed API.
 - [x] Cloudflare Email Routing continues forwarding incoming messages to verified destination inboxes while the Email Worker records a copy for the protected Mail Desk.
 - [x] All Convex-backed saves update public queries reactively without a code deployment.
 - [x] Global Site Settings are bound to the public hero, event facts, rationale, donation invitation, registration/donation availability, header, and footer rather than duplicated static copy.
@@ -200,7 +206,7 @@ text, see [`CONTENT_EDITABILITY_AUDIT.md`](CONTENT_EDITABILITY_AUDIT.md).
 - [x] Announcement content and enabled state.
 - [x] Contact, registration and press emails, phone, and WhatsApp.
 - [x] Facebook, X/Twitter, Instagram, and YouTube links.
-- [x] Donation tier labels are editable. `Partial`: the old Stripe price-reference field is removed; SSLCOMMERZ will need its own reference handling when implementation begins.
+- [x] Donation invitation copy, bank-transfer copy, and both summit bank accounts are editable; the `donationsEnabled` toggle controls Donate visibility. Donation tiers no longer exist on the Cloudflare stack.
 - [x] Footer title/body. `Partial`: legal-link records remain.
 
 ### Programme tab — dynamic
@@ -297,11 +303,11 @@ The equivalent D1 tables and R2 objects now serve the web app on this branch.
 Keep these in code:
 
 - [x] Design tokens, typography, responsive grid, reusable components, accessibility behaviour, route/layout shell, and validation rules.
-- [x] Convex schema, D1 migrations, secure server functions, and role enforcement. `Partial`: the inactive Stripe prototype has been removed; SSLCOMMERZ integration still has to be written when it is un-deferred.
+- [x] Convex schema, D1 migrations, secure server functions, and role enforcement. Online payments are out of scope, so no provider integration exists on the Cloudflare stack.
 
 Move these to the content store and expose through Admin:
 
-- [x] Event facts, contact/social links, announcement, footer content, and donation tiers.
+- [x] Event facts, contact/social links, announcement, footer content, and donation bank-transfer details.
 - [x] Principal public-page hero labels, titles, and introductions.
 - [x] Navigation labels are generated from programme, media, engage, and detailed content.
 - [x] People, partners/sponsors, regional countries, media, programme, chart series, and detailed editorial copy are supported.
@@ -311,7 +317,7 @@ Move these to the content store and expose through Admin:
 
 Never make these editable as plain content:
 
-- [x] Auth signing keys, admin role enforcement, database validators, and executable code remain code-owned. Payment credentials will remain server-only when SSLCOMMERZ is implemented.
+- [x] Auth signing keys, admin role enforcement, database validators, and executable code remain code-owned.
 
 ## Delivery operations
 
@@ -328,9 +334,9 @@ Never make these editable as plain content:
 - [x] The initial-content seed is first-install-only and becomes a verified no-op once Admin-managed site content exists.
 - [x] Re-running the seed cannot restore administrator-deleted Evidence, Programme, Engage, support, legal, partner, media, or other fixture records.
 - [x] Production seeding fails closed, and retired content migration/repair functions are absent from the deployed API.
-- [x] Releases preserve every production content table and stored file; only authenticated Admin and operational form/payment flows may write live data.
+- [x] Releases preserve every production content table and stored file; only authenticated Admin and operational form flows may write live data.
 - [x] `Interim (5 October 2026)`: the same rules apply to the D1/R2 backend. D1 schema changes ship as ordered migrations in `db/migrations/`, and a release is only accepted when the content-table fingerprint comparison shows no unintended content change.
-- [x] `Interim (5 October 2026)`: no seed, fixture sync, or reusable content migration runs against either production store. Carry Day 03, the engage cards, and the evidence stats across as authenticated Admin writes.
+- [x] `Interim (5 October 2026)`: no seed, fixture sync, or reusable content migration runs against either production store. Carry Day 03, the engage cards, and the evidence stats across as authenticated Admin writes. The full procedure is [`CLOUDFLARE_PROD_CARRYOVER.md`](CLOUDFLARE_PROD_CARRYOVER.md).
 - [ ] `Interim (5 October 2026)`: publish `legal` category rows through Admin so `/privacy` and `/terms` render approved copy.
 - [x] Public managed lists use stable loading silhouettes rather than briefly rendering empty or fallback states while Convex resolves.
 - [x] Media item saves omit absent optional storage and YouTube fields, allowing photo-gallery uploads to persist.
@@ -353,4 +359,4 @@ Never make these editable as plain content:
 - [x] Support forms, public document layouts, long editorial headings, shared footer content, and homepage record grids have explicit compact and tablet treatments.
 - [x] Hero countdown digits, separators, labels, live indicator, and date row fit without clipping at 320px and 360px compact-phone widths.
 - [x] Visitor-facing placeholder sweep completed; empty states are neutral and operational “coming soon” messages remain intentionally tied to availability settings.
-- [ ] Content approval, legal/privacy approval, SSLCOMMERZ live-mode test, analytics/consent decision, and launch checklist.
+- [ ] Content approval, legal/privacy approval, analytics/consent decision, and launch checklist.

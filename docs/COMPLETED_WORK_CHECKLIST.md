@@ -1,6 +1,6 @@
 # Completed Work Checklist
 
-Last verified: 28 July 2026
+Last verified: 12 October 2026
 
 This is the detailed delivery record for the Paris Hindu Summit 2026 website.
 It complements `PRODUCT_SPEC_CHECKLIST.md`, which remains the source of truth
@@ -363,8 +363,14 @@ for incomplete work, approvals, and launch dependencies.
 
 ## Intentionally not activated
 
-- ✅ Stripe remains excluded from this delivery at the client’s request.
-- ✅ SSLCOMMERZ is the documented provider decision for the initial donation launch; implementation and merchant activation remain pending.
-- ✅ Polar is excluded, and Stripe is deferred.
-- ✅ No live payment keys, checkout, collection, or webhook were activated.
+- ✅ Online payments are permanently out of scope at the organiser’s request (October 2026): no provider, checkout, tier, ledger, receipt, or activation work ships on either stack.
 - ✅ Population Share and Displacement charts remain published and editable; the Admin Evidence preview now targets their live homepage section.
+
+## Cloudflare migration (October 2026)
+
+- ✅ Web app runs on Cloudflare Workers (vinext) with a Hono API on D1/R2; no `convex/react` in web code.
+- ✅ Donation tier/checkout/ledger machinery removed from the Worker, web UI, admin portal, and D1 (`0005_drop_donations.sql`); `/donate` is bank-transfer information only.
+- ✅ Expo mail-desk app migrated to Worker better-auth and the Hono admin mail API; Convex dependencies removed.
+- ✅ Mail router dual-archives inbound mail to Convex and D1 during the interim.
+- ✅ Hono `/mail/read` defaults to mark-read and single messages accept Bcc, matching the retired Convex-era behaviour.
+- ✅ Production carry-over runs through authenticated Admin writes per `CLOUDFLARE_PROD_CARRYOVER.md`; bulk import into production stays refused.

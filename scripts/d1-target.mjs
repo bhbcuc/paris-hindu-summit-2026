@@ -144,3 +144,47 @@ export const cfQuery = (databaseId, sql) => {
 
 export const quoteIdentifier = (value) => `"${String(value).replaceAll('"', '""')}"`
 export const quoteLiteral = (value) => `'${String(value).replaceAll("'", "''")}'`
+
+// Strip `--` line comments and `/* */` block comments from SQL while leaving
+// quoted strings and identifiers untouched. `cf d1 query --sql` rejects
+// payloads that contain comments, so the migration runner sends the stripped
+// form. Newlines outside comments are preserved.
+export const stripSqlComments = (sql) => {
+  let out = ""
+  let index = 0
+  while (index < sql.length) {
+    const char = sql[index]
+    const next = sql[index + 1]
+    if (char === "'" || char === '"') {
+      const start = index
+      index++
+      while (index < sql.length) {
+        if (sql[index] === char && sql[index + 1] === char) {
+          index += 2
+          continue
+        }
+        if (sql[index] === char) {
+          index++
+          break
+        }
+        index++
+      }
+      out += sql.slice(start, index)
+      continue
+    }
+    if (char === "-" && next === "-") {
+      while (index < sql.length && sql[index] !== "\n") index++
+      continue
+    }
+    if (char === "/" && next === "*") {
+      index += 2
+      while (index < sql.length && !(sql[index] === "*" && sql[index + 1] === "/")) index++
+      index += 2
+      out += " "
+      continue
+    }
+    out += char
+    index++
+  }
+  return out
+}

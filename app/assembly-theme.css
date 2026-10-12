@@ -2113,31 +2113,6 @@ body:has(.photo-lightbox) [data-slot="dialog-overlay"] {
   background: var(--assembly-red);
   border-color: var(--assembly-red);
 }
-.payment-dialog {
-  color: var(--assembly-ink);
-  background: var(--assembly-surface);
-  border-color: var(--assembly-rule);
-}
-.dialog-icon {
-  color: var(--assembly-red);
-  border-color: var(--assembly-rule);
-}
-.mock-card {
-  color: var(--assembly-ink);
-  background: var(--assembly-paper);
-  border-color: var(--assembly-rule);
-}
-.mock-card > svg {
-  color: var(--assembly-red);
-}
-.mock-card small,
-.payment-success p {
-  color: var(--ash);
-}
-.payment-success > svg {
-  color: var(--assembly-red);
-}
-
 /* Footer */
 .site-footer {
   color: #fff;
@@ -2568,134 +2543,15 @@ body:has(.photo-lightbox) [data-slot="dialog-overlay"] {
   color: var(--ash);
   line-height: 1.7;
 }
-.donation-tier-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--assembly-rule);
-}
-.donation-tier-grid > div {
-  border-right: 1px solid var(--assembly-rule);
-}
-.donation-tier-grid > div:last-child {
-  border-right: 0;
-}
-.donation-tier {
-  width: 100%;
-  min-height: 380px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 26px;
-  color: var(--assembly-ink);
-  text-align: left;
-  transition: color 180ms ease, background 180ms ease;
-}
-.donation-tier:hover,
-.donation-tier[data-active="true"] {
-  color: #fff;
-  background: var(--assembly-blue);
-}
-.donation-tier > span {
-  font: 750 9px var(--font-mono-stack);
-}
-.donation-tier svg {
-  width: 30px;
-  height: 30px;
-  margin: 68px 0 24px;
-  color: var(--assembly-red);
-}
-.donation-tier h3 {
-  margin: 0 0 8px;
-  font: 800 26px / 1 var(--font-body-stack);
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
-}
-.donation-tier b {
-  font: 800 42px / 1 var(--font-body-stack);
-  letter-spacing: -0.06em;
-}
-.donation-tier p {
-  margin: auto 0 0;
-  color: currentColor;
-  opacity: 0.72;
-  font-size: 11px;
-  line-height: 1.6;
-}
-.checkout-demo {
-  display: grid;
-  grid-template-columns: 1fr 0.7fr;
-  gap: clamp(40px, 8vw, 120px);
-  margin-top: 70px;
-  padding: clamp(35px, 6vw, 78px);
-  color: #fff;
-  background: var(--assembly-blue);
-  position: relative;
-  overflow: hidden;
-}
-.checkout-demo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(110deg, transparent 0 70px, #ffffff0b 70px 71px);
-  animation: record-scan 12s linear infinite;
-}
-.checkout-demo > * {
-  position: relative;
-}
-.checkout-demo h2 {
-  margin: 22px 0;
-  font: 800 clamp(44px, 5vw, 74px) / 0.9 var(--font-body-stack);
-  letter-spacing: -0.065em;
-  text-transform: uppercase;
-}
-.checkout-demo p {
-  max-width: 650px;
-  color: #d1dcf3;
-  line-height: 1.7;
-}
-.payment-readiness {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 32px;
-}
-.payment-readiness span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font: 700 9px var(--font-mono-stack);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.payment-readiness svg {
-  width: 15px;
-  color: #e4c884;
-}
-.checkout-demo form {
-  align-self: center;
-  display: grid;
-  gap: 15px;
-  padding: 28px;
-  color: var(--assembly-ink);
-  background: var(--assembly-surface);
-}
-.checkout-demo form label,
 .support-fields label {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
-.checkout-demo form label > span,
 .support-fields label > span {
   font: 750 9px var(--font-mono-stack);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-.checkout-demo form small {
-  color: var(--ash);
-  font-size: 9px;
-  line-height: 1.5;
 }
 .donation-result {
   margin-top: 20px;
@@ -2834,14 +2690,8 @@ body:has(.photo-lightbox) [data-slot="dialog-overlay"] {
 .engage-grid a svg {
   width: 15px;
 }
-@keyframes record-scan {
-  to { transform: translateX(142px); }
-}
 @media (max-width: 1050px) {
-  .donation-tier-grid { grid-template-columns: repeat(2, 1fr); }
   .bank-transfer-panel { grid-template-columns: 1fr; }
-  .donation-tier-grid > div:nth-child(2) { border-right: 0; }
-  .donation-tier-grid > div:nth-child(-n + 2) { border-bottom: 1px solid var(--assembly-rule); }
   .support-desk { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
@@ -2849,19 +2699,13 @@ body:has(.photo-lightbox) [data-slot="dialog-overlay"] {
   .bank-transfer-panel { gap: 44px; padding: 28px 22px; }
   .bank-transfer-intro { grid-template-columns: 1fr; gap: 18px; }
   .donation-heading > p:last-child,.support-intro > p:last-child { grid-column: 1; }
-  .donation-tier-grid,.engage-grid { grid-template-columns: 1fr; }
-  .donation-tier-grid > div { border-right: 0; border-bottom: 1px solid var(--assembly-rule); }
-  .donation-tier-grid > div:last-child { border-bottom: 0; }
-  .donation-tier { min-height: 330px; }
-  .checkout-demo { grid-template-columns: 1fr; padding-inline: 22px; }
-  .checkout-demo form { padding: 20px; }
+  .engage-grid { grid-template-columns: 1fr; }
   .support-fields { grid-template-columns: 1fr; }
   .support-fields .wide { grid-column: 1; }
   .engage-grid article { min-height: 390px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .summit-reveal { opacity: 1; transform: none; transition: none; }
-  .checkout-demo::before { animation: none; }
 }
 
 /* Launch-complete civic record surfaces */
@@ -3252,7 +3096,6 @@ body:has(.announcement-strip) .page-hero { padding-top: 110px; }
   .publication-section h2,
   .publication-empty h2,
   .support-intro h2,
-  .checkout-demo h2,
   .footer-callout h2,
   .footer-grid b {
     max-width: 100%;
@@ -3302,7 +3145,6 @@ body:has(.announcement-strip) .page-hero { padding-top: 110px; }
   .split-intro h2,
   .nomination-cta h2,
   .support-intro h2,
-  .checkout-demo h2,
   .managed-overview h2,
   .document-collection h2,
   .strategy-vision h2,

@@ -364,21 +364,6 @@ main { min-height: 70svh; }
 .contact-success svg { width: 42px; height: 42px; }
 .contact-success h3 { margin: 20px 0 8px; font: 500 48px var(--font-display-stack); }
 
-/* Dialog */
-.payment-dialog { max-width: 520px !important; padding: 28px; border-radius: 0; }
-.payment-dialog [data-slot="dialog-title"] { font: 500 34px/1 var(--font-display-stack); }
-.dialog-icon { width: 42px; height: 42px; display: grid; place-items: center; color: var(--wine-soft); border: 1px solid var(--border); }
-.amount-options { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-.amount-options [data-slot="button"] { border-radius: 0; }
-.mock-card { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--muted); border: 1px solid var(--border); }
-.mock-card > svg { width: 22px; color: var(--amber); }
-.mock-card span { display: flex; flex-direction: column; }
-.mock-card small { color: var(--ash); font-size: 10px; }
-.payment-success { min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.payment-success > svg { width: 42px; height: 42px; color: var(--wine-soft); }
-.payment-success h3 { margin: 20px 0 8px; font: 500 34px var(--font-display-stack); }
-.payment-success p { color: var(--ash); line-height: 1.7; }
-
 /* Footer */
 .site-footer { padding: 85px clamp(24px,6vw,96px) 28px; background: #08080a; border-top: 1px solid var(--border); }
 .footer-callout { display: grid; grid-template-columns: 170px 1fr auto; gap: 32px; align-items: center; padding-bottom: 75px; }
@@ -481,8 +466,6 @@ main { min-height: 70svh; }
   .registration-form,.contact-section form { padding: 24px; }
   .registration-form [data-slot="button"],.contact-section form [data-slot="button"] { width: 100%; }
   .donation-panel { grid-template-columns: 1fr; }.donation-panel > svg { width: 36px; }.donation-panel [data-slot="button"] { width: 100%; }
-  .amount-options { grid-template-columns: 1fr 1fr; }
-  .payment-dialog { width: calc(100vw - 28px) !important; max-height: calc(100svh - 28px); overflow-y: auto; }
   .footer-grid { grid-template-columns: 1fr; gap: 35px; }.footer-grid > div:first-child { grid-column: auto; }.footer-legal { flex-direction: column; gap: 12px; }
 }
 

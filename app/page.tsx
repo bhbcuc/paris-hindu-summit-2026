@@ -26,7 +26,6 @@ import {
   PartnerWall,
   RegionalSection,
 } from "@/components/site/institutional-sections"
-import { PaymentDialog } from "@/components/site/payment-dialog"
 import { event } from "@/lib/content"
 import { formatEventDateRange } from "@/lib/event-format"
 
@@ -226,28 +225,32 @@ export default function HomePage() {
         <Countdown />
       </section>
 
-      <section className="home-support">
-        <SmartImage
-          src="/images/paris-night.png"
-          alt="Paris at night beside the River Seine"
-          fill
-          sizes="100vw"
-        />
-        <div>
-          <p className="kicker">
-            {settings?.donationEyebrow ?? "Stand with the summit"}
-          </p>
-          <h2>
-            {settings?.donationTitle ??
-              "Help testimony travel further than the room."}
-          </h2>
-          <p>
-            {settings?.donationBody ??
-              "Support documentation, international participation, media work, legal advocacy, and the standing network after Paris."}
-          </p>
-          <PaymentDialog disabled={!donationsEnabled} />
-        </div>
-      </section>
+      {donationsEnabled && (
+        <section className="home-support">
+          <SmartImage
+            src="/images/paris-night.png"
+            alt="Paris at night beside the River Seine"
+            fill
+            sizes="100vw"
+          />
+          <div>
+            <p className="kicker">
+              {settings?.donationEyebrow ?? "Stand with the summit"}
+            </p>
+            <h2>
+              {settings?.donationTitle ??
+                "Help testimony travel further than the room."}
+            </h2>
+            <p>
+              {settings?.donationBody ??
+                "Support documentation, international participation, media work, legal advocacy, and the standing network after Paris."}
+            </p>
+            <Button size="lg" nativeButton={false} render={<Link href="/donate" />}>
+              Donate <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+          </div>
+        </section>
+      )}
     </>
   )
 }

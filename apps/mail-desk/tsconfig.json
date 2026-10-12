@@ -6,9 +6,6 @@
       "@/*": [
         "./src/*"
       ],
-      "@summit-backend/*": [
-        "../../convex/*"
-      ],
       "@/assets/*": [
         "./assets/*"
       ]

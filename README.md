@@ -33,7 +33,7 @@ The complete website includes matching **light and dark modes**. The header cont
 | `/regional`    | Dynamic Beyond Bangladesh regional forum, including Nepal                           |
 | `/partners`    | Non-carousel institutional partner and sponsor wall                                |
 | `/support`     | Persistent support, contact, volunteer, sponsor, and media enquiry forms             |
-| `/donate`      | Contribution flow with a safe demonstration mode; SSLCOMMERZ activation is pending  |
+| `/donate`      | Bank-transfer giving information; online payments are permanently out of scope      |
 | `/admin`       | Better Auth-protected editorial control room                                         |
 
 The client’s living delivery requirements, implementation state, admin-panel
@@ -56,9 +56,9 @@ The detailed record of delivered work is maintained in
 - Delegate registration form with a realistic success state
 - Convex-persistent registration, contact, volunteer, sponsor, support, and media enquiry flows with references, consent, spam controls, and CSV export
 - Donation dialog with selectable euro amounts, email validation, and a mock success state
-- Dedicated donation page with server-side amount validation, a Convex contribution ledger, and a safe demo mode while the selected SSLCOMMERZ integration is pending
+- Dedicated donation page presenting the summit bank accounts as managed information; online payments are permanently out of scope
 - Better Auth email/password login; the first verified account can establish the initial administrator, and later accounts require an assigned role
-- Administrator and editor roles enforced inside Convex mutations
+- Administrator and editor roles enforced inside the Hono admin API (Convex mutations on live Vercel production)
 - Invitation-only team access: public account creation closes after bootstrap, and administrators provision or suspend named accounts from Admin
 - Global settings editor for event identity, dates, venue, format, audience numbers, languages, announcement, email addresses, phone/WhatsApp, social links, hero, donation, and footer copy
 - Purpose-built page editors for Proposed Agenda, Paris Resolution, the 5-Year Strategic Plan, the International Partnership Framework, Speakers, Organizing Team and Advisory Board, and Media & Publication
@@ -138,16 +138,14 @@ Better Auth signing secrets, `ALLOW_INITIAL_ADMIN_SIGNUP`, and payment
 credentials stay in Convex environment variables. Never add them to CMS fields
 or commit them to Git.
 
-### Payment-provider decision
+### Payment decision
 
-SSLCOMMERZ is the selected provider for the initial donation launch. Polar is
-excluded, and Stripe is deferred. The current donation journey remains in
-demonstration mode: do not add live payment credentials or treat the inactive
-Stripe prototype as production-ready. Before activation, implement and verify
-SSLCOMMERZ session initiation, signed validation/IPN handling, server-side
-amount reconciliation, success/failure/cancellation routes, approved currencies,
-international-card acceptance, settlement, and applicable foreign-donation
-compliance for the merchant account.
+Online payments are permanently out of scope (organiser decision, October
+2026). The `/donate` page is bank-transfer information only: there is no
+checkout, no contribution ledger, and no provider integration on the
+Cloudflare stack. Do not reintroduce Stripe, SSLCOMMERZ, or any other payment
+provider. The `convex/` Stripe prototype stays untouched until the Convex
+cutover, when it is removed with the rest of the legacy backend.
 
 Every commit must be followed by a production backend deploy:
 
@@ -177,8 +175,8 @@ The web app on this branch runs as a Cloudflare Worker built with
 Auth also runs on D1 through Kysely.
 
 Convex is still present and still serves the live Vercel production deployment
-and the Expo mail-desk app. Nothing in this section replaces the Convex workflow
-above.
+only; the Expo mail-desk app now talks to the Hono admin mail API on the
+Worker. Nothing in this section replaces the Convex workflow above.
 
 ### Build and preview
 
@@ -261,7 +259,11 @@ endpoint, and an administrator provisions every additional named account from
 
 Before releasing a D1 change, confirm the content-table fingerprints are
 unchanged so a schema migration has not silently altered or dropped Admin-owned
-content. Editorial changes belong in Admin, not in a migration.
+content. Editorial changes belong in Admin, not in a migration. Loading live
+content into Cloudflare production follows
+[`docs/CLOUDFLARE_PROD_CARRYOVER.md`](docs/CLOUDFLARE_PROD_CARRYOVER.md):
+authenticated Admin writes in batches, fingerprinted before and after — never a
+bulk import.
 
 ### New scripts
 
@@ -314,7 +316,7 @@ Before publication, the organisers should approve final speaker status, programm
 - Tailwind CSS 4
 - shadcn/ui with Base UI primitives
 - Bun
-- Convex database and file storage (live production and Expo mail desk)
+- Convex database and file storage (live Vercel production, until cutover)
 - Cloudflare Workers with vinext and Vite (migration target for the web app)
 - Hono API on D1 and R2
 - Better Auth on D1 via Kysely

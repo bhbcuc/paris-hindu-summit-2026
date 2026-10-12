@@ -43,8 +43,9 @@ export default function ComposeScreen() {
   async function submit() {
     setBusy(true); setError("")
     try {
-      await sendMail({ to, cc, bcc, subject, text: body, mode: bulk ? "bulk" : "single", consentConfirmed: consent, inReplyTo: params.inReplyTo, references: params.references, attachments })
-      Alert.alert("Message queued", "Brevo accepted the message for delivery.", [{ text: "Done", onPress: () => router.back() }])
+      const result = await sendMail({ to, cc, bcc, subject, text: body, mode: bulk ? "bulk" : "single", consentConfirmed: consent, inReplyTo: params.inReplyTo, references: params.references, attachments })
+      const count = result.recipientCount ?? 1
+      Alert.alert("Message queued", `Queued for ${count} recipient${count === 1 ? "" : "s"}. Delivery status will appear in Mail Desk.`, [{ text: "Done", onPress: () => router.back() }])
     } catch (cause) { setError(cause instanceof Error ? cause.message : "The message could not be sent.") }
     finally { setBusy(false) }
   }

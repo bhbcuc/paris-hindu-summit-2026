@@ -40,6 +40,7 @@ import {
   refuse,
   refuseProductionDatabase,
   resolveTarget,
+  stripSqlComments,
 } from "./d1-target.mjs"
 
 const MIGRATION_FILE = /^\d[\d_]*[^/]*\.sql$/
@@ -76,8 +77,10 @@ const appliedMigrations = async (databaseId) => {
 }
 
 // One transactional batch per migration: file contents then the ledger row.
+// Comments are stripped first: `cf d1 query --sql` rejects payloads that
+// contain `--` or `/* */` comments, while quoted text passes through.
 const applyMigration = async (databaseId, dir, name) => {
-  const contents = readFileSync(join(dir, name), "utf8").replaceAll("\r\n", "\n").trimEnd()
+  const contents = stripSqlComments(readFileSync(join(dir, name), "utf8").replaceAll("\r\n", "\n")).trim()
   const sql = `${contents}\nINSERT INTO ${quoteIdentifier(LEDGER_TABLE)} (name) VALUES (${quoteLiteral(name)});\n`
   cfQuerySets(databaseId, sql)
 }

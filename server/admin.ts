@@ -244,16 +244,14 @@ admin.get("/dashboard", async (c) => {
   const recent = await c.env.DB.prepare(
     "SELECT * FROM submissions ORDER BY createdAt DESC LIMIT 6"
   ).all<Record<string, unknown>>()
-  const [content, submissions, donations, assets] = await Promise.all([
+  const [content, submissions, assets] = await Promise.all([
     count("cmsEntries"),
     count("submissions"),
-    count("donations"),
     count("assets"),
   ])
   return c.json({
     content,
     submissions,
-    donations,
     assets,
     recentSubmissions: recent.results.map((item) => ({
       _id: item.id,
@@ -310,26 +308,6 @@ admin.post("/submissions/update", async (c) => {
     summary: `Submission marked ${body.status}`,
   })
   return c.json(null)
-})
-
-admin.get("/donations", async (c) => {
-  const blocked = await gate(c, false)
-  if (blocked) return blocked
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM donations ORDER BY createdAt DESC LIMIT 200"
-  ).all<Record<string, unknown>>()
-  return c.json(
-    results.map((item) => ({
-      _id: item.id,
-      reference: item.reference,
-      donorName: item.donorName,
-      donorEmail: item.donorEmail,
-      amountCents: item.amountCents,
-      currency: item.currency,
-      status: item.status,
-      createdAt: item.createdAt,
-    }))
-  )
 })
 
 admin.get("/audit", async (c) => {
@@ -1068,39 +1046,7 @@ admin.delete("/organizations/:id", async (c) => {
   return c.json(null)
 })
 
-// --- Donation tiers + settings (mirror convex/donations + settings) ---
-
-admin.get("/donation-tiers", async (c) => {
-  const blocked = await gate(c, false)
-  if (blocked) return blocked
-  const { results } = await c.env.DB.prepare(`SELECT * FROM donationTiers ORDER BY status ASC, "order" ASC LIMIT 50`).all<Record<string, unknown>>()
-  return c.json(results.map((item) => ({
-    _id: item.id, slug: item.slug, label: item.label, amountCents: item.amountCents,
-    description: item.description,
-    customAmount: fromBool(item.customAmount as number), order: item.order, status: item.status,
-  })))
-})
-
-admin.post("/donation-tiers/save", async (c) => {
-  const blocked = await gate(c, false)
-  if (blocked) return blocked
-  const body = await c.req.json<Record<string, unknown>>().catch(() => null)
-  if (!body) return err("Invalid request.", 400)
-  const id = typeof body.id === "string" && body.id ? body.id : newId()
-  const timestamp = now()
-  const amountCents = body.amountCents === null || body.amountCents === undefined ? null : Math.floor(Number(body.amountCents))
-  const existing = await c.env.DB.prepare("SELECT id FROM donationTiers WHERE id = ?").bind(id).first<{ id: string }>()
-  const values = [str(body.slug, 120), str(body.label, 200), Number.isFinite(amountCents) ? amountCents : null, str(body.description, 2000), asBool(body.customAmount), Number.isFinite(Number(body.order)) ? Number(body.order) : 0, body.status === "published" ? "published" : "draft", timestamp]
-  if (existing) {
-    await c.env.DB.prepare(`UPDATE donationTiers SET slug = ?, label = ?, amountCents = ?, description = ?, customAmount = ?, "order" = ?, status = ?, updatedAt = ? WHERE id = ?`)
-      .bind(...values, id).run()
-  } else {
-    await c.env.DB.prepare(`INSERT INTO donationTiers (id, slug, label, amountCents, description, customAmount, "order", status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(id, ...values).run()
-  }
-  await audit(c, { action: existing ? "update" : "create", entityType: "donationTier", entityId: id, summary: `Saved ${str(body.label, 200)}` })
-  return c.json({ _id: id })
-})
+// --- Settings (mirror convex/settings) ---
 
 const SETTINGS_COLUMNS = [
   "eventName", "shortName", "theme", "eventStartIso", "eventEndIso", "timezone",
@@ -1235,8 +1181,10 @@ admin.post("/mail/read", async (c) => {
   if (blocked) return blocked
   const body = await c.req.json<Record<string, unknown>>().catch(() => null)
   if (typeof body?.id !== "string") return err("Invalid request.", 400)
+  // An absent `read` flag means mark-read (Convex markRead parity: the web
+  // panel and Expo both send id-only). Pass read:false to mark unread.
   await c.env.DB.prepare("UPDATE mailMessages SET isRead = ?, updatedAt = ? WHERE id = ?")
-    .bind(asBool(body.read), now(), body.id)
+    .bind(asBool(body.read ?? true), now(), body.id)
     .run()
   return c.json(null)
 })
@@ -1354,9 +1302,13 @@ admin.post("/mail/send", async (c) => {
       .slice(0, cap)
   const to = parseList(body.to, 300)
   const cc = parseList(body.cc, 50)
+  const mode = body.mode === "bulk" ? "bulk" : "single"
+  // Single messages accept Bcc (Convex-era parity); bulk mode puts the whole
+  // list in Bcc itself, so an explicit list is ignored there.
+  const singleBcc = mode === "bulk" ? [] : parseList(body.bcc, 50)
+  const recipientTotal = to.length + singleBcc.length
   const subject = str(body.subject, 500)
   const text = str(body.text, 100_000)
-  const mode = body.mode === "bulk" ? "bulk" : "single"
   if (to.length === 0) return err("Add at least one valid recipient.", 400)
   if (!subject) return err("Add a subject.", 400)
   if (!text) return err("Add a message body.", 400)
@@ -1402,14 +1354,14 @@ admin.post("/mail/send", async (c) => {
   const timestamp = now()
   const messageId = `<${newId().replaceAll("-", "")}.${timestamp}@parishindusummit.org>`
   const toAddresses = mode === "bulk" ? [] : to
-  const bccAddresses = mode === "bulk" ? to : []
+  const bccAddresses = mode === "bulk" ? to : singleBcc
   const inReplyTo = str(body.inReplyTo, 1000) || null
   const references = str(body.references, 4000) || null
   const payload = {
     from: `${SENDER_NAME} <${fromAddress}>`,
     to: mode === "bulk" ? [fromAddress] : to,
     cc: cc.length > 0 ? cc : undefined,
-    bcc: mode === "bulk" ? to : undefined,
+    bcc: mode === "bulk" ? to : singleBcc.length > 0 ? singleBcc : undefined,
     subject,
     text,
     attachments: attachments.map((a) => ({ content: a.content, filename: a.filename })),
@@ -1447,11 +1399,11 @@ admin.post("/mail/send", async (c) => {
   const dayCount = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM mailDispatches WHERE createdAt >= ?")
     .bind(startOfDay.getTime())
     .first<{ n: number }>()
-  if ((dayCount?.n ?? 0) + to.length > DAILY_SEND_LIMIT) {
+  if ((dayCount?.n ?? 0) + recipientTotal > DAILY_SEND_LIMIT) {
     return err("Daily sending limit reached. Contact the platform administrator to raise it.", 429)
   }
   await c.env.DB.prepare("INSERT INTO mailDispatches (id, providerMessageId, recipientCount, createdAt) VALUES (?, ?, ?, ?)")
-    .bind(newId(), providerMessageId, to.length, timestamp)
+    .bind(newId(), providerMessageId, recipientTotal, timestamp)
     .run()
   for (const address of to) {
     const contact = await c.env.DB.prepare("SELECT id FROM mailContacts WHERE email = ?").bind(address).first<{ id: string }>()
@@ -1464,9 +1416,9 @@ admin.post("/mail/send", async (c) => {
     action: "send",
     entityType: "mailMessage",
     entityId: messageId,
-    summary: `Sent “${subject.slice(0, 120)}” to ${to.length} recipient(s)`,
+    summary: `Sent “${subject.slice(0, 120)}” to ${recipientTotal} recipient(s)`,
   })
-  return c.json({ messageId, providerMessageId, recipientCount: to.length, status: "queued" })
+  return c.json({ messageId, providerMessageId, recipientCount: recipientTotal, status: "queued" })
 })
 
 export default admin

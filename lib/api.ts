@@ -232,16 +232,6 @@ export interface Statement {
   fileUrl: string
 }
 
-export interface DonationTier {
-  _id: string
-  slug: string
-  label: string
-  amountCents: number | null
-  description: string
-  customAmount: boolean
-  order: number
-}
-
 export interface Banner {
   _id: string
   title: string
@@ -260,7 +250,6 @@ interface ApiResponses {
   "/banners": Banner[]
   "/media": MediaSection[]
   "/statements": Statement[]
-  "/donation-tiers": DonationTier[]
   "/organizations": Organization[]
   "/regional": RegionalCountry[]
   "/cms/published": CmsEntry[]
@@ -316,7 +305,6 @@ export interface AdminTeamMember {
 export interface AdminDashboard {
   content: number
   submissions: number
-  donations: number
   assets: number
   recentSubmissions: Array<{ _id: string; type: string; name: string; email: string; status: string; createdAt: number }>
 }
@@ -334,17 +322,6 @@ export interface AdminSubmission {
   message: string
   status: string
   adminNote: string
-  createdAt: number
-}
-
-export interface AdminDonation {
-  _id: string
-  reference: string
-  donorName: string
-  donorEmail: string
-  amountCents: number
-  currency: string
-  status: string
   createdAt: number
 }
 
@@ -509,17 +486,6 @@ export interface AdminCharts {
   points: AdminChartPoint[]
 }
 
-export interface AdminTier {
-  _id: string
-  slug: string
-  label: string
-  amountCents: number | null
-  description: string
-  customAmount: boolean
-  order: number
-  status: string
-}
-
 export interface AdminMailAttachment {
   _id: string
   fileName: string
@@ -578,7 +544,6 @@ interface AdminApiResponses {
   "/team": AdminTeamMember[]
   "/dashboard": AdminDashboard
   "/submissions": AdminSubmission[]
-  "/donations": AdminDonation[]
   "/audit": AdminAuditEvent[]
   "/assets": AdminAsset[]
   "/banners": AdminBanner[]
@@ -589,7 +554,6 @@ interface AdminApiResponses {
   "/statements": AdminStatement[]
   "/programme": AdminProgramme
   "/charts": AdminCharts
-  "/donation-tiers": AdminTier[]
   "/mail/messages": AdminMailMessage[]
   "/mail/allowance": AdminMailAllowance
   "/mail/contacts": AdminMailContact[]

@@ -28,12 +28,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 The backend is dual-backend while the Cloudflare migration is in flight. These
 rules amend the Convex-specific rules above for that interim period.
 
-- The web app on this branch reads and writes D1 and R2 through the Hono API on
-  Cloudflare Workers. Web code must not import `convex/react` or reach a Convex
-  client.
+- The web app and the Expo mail-desk app on this branch read and write D1 and
+  R2 through the Hono API on Cloudflare Workers. Web and Expo code must not
+  import `convex/react` or reach a Convex client.
 - `convex/` is retained and must not be deleted or proposed for deletion. Live
-  Vercel production and the Expo mail-desk app still depend on it. Treat Convex
-  and D1 as two stores, and resolve file URLs at read time in both.
+  Vercel production still depends on it. Treat Convex and D1 as two stores,
+  and resolve file URLs at read time in both.
+- Online payments are permanently out of scope (organiser decision, October
+  2026). Do not reintroduce Stripe, SSLCOMMERZ, or any other payment provider
+  on either stack; the `/donate` page is bank-transfer information only.
 - `bun run convex:deploy:prod` is now scoped to changes that touch `convex/`.
   Do not run it for unrelated commits. Changes outside `convex/` ship through the
   Cloudflare pipeline, and D1 schema changes ship as ordered migrations in
