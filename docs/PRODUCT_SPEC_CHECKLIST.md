@@ -22,6 +22,14 @@ authority on delivered product behaviour.
   still serves the live Vercel production deployment only. Neither backend is
   scheduled for removal on this branch; Vercel/Convex stays online until the
   Cloudflare system is verified fully operational.
+- Prod state verified 12 October 2026: `summit-website` Worker live
+  (`https://summit-website.venue-mind.workers.dev`, 21/21 public routes 200);
+  `summit-db` at ledger `0001`–`0005` with content byte-identical to the 4
+  October snapshot on all shared tables; `summit-assets` holds all 80
+  referenced files; mail router dual-archives to both backends. A 12 October
+  field-by-field diff of Convex prod vs D1 prod found zero content deltas, so
+  no content carry-over was needed. Still open (organiser-authored via Admin):
+  `legal`, `statements`, and `homeBanners` rows, empty in both stores.
 - Payment decision recorded (organiser decision, October 2026): online payments
   are permanently out of scope. The `/donate` page is bank-transfer information
   only; the tier/checkout/ledger machinery is removed from the Worker, the web

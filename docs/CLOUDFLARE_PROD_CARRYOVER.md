@@ -12,16 +12,24 @@ database and bucket, and that guard stays in place.
    (`ADMIN_API_TOKEN`, `MAIL_INGEST_SECRET`, `BETTER_AUTH_SECRET`,
    `RESEND_API_KEY`, `ALLOW_INITIAL_ADMIN_SIGNUP=false` after bootstrap).
 2. Apply the D1 schema to production with the `cf` CLI directly (the guarded
-   repo runner only targets development):
-   `cf d1 migrations apply summit-db`
+   repo runner only targets development). ✅ Done 2026-10-12 07:40 UTC:
+   ledger `0001`–`0005` on `summit-db`; fingerprint drift was exactly
+   `rateLimits` added plus `donationTiers`/`donations` removed. Do not re-apply:
+   `0003`/`0005` drops are not re-runnable and `cf d1 migrations list` cannot
+   be trusted to report pending files (it returned empty with two migrations
+   outstanding). Verify with the ledger query and a fingerprint instead.
 3. Bootstrap the first production administrator (`/admin` → Become
    administrator), then provision the named team accounts from Team access.
 4. Set `MAIL_ARCHIVE_ENDPOINT=https://<prod-worker>/api/v1/mail/inbound` on the
    mail router and redeploy it, so new inbound mail lands in D1 as well as
    Convex. Use the same `MAIL_INGEST_SECRET` value in both backends.
-5. Take a safety export before the first content session:
-   `cf d1 export summit-db --output carryover-base.sql`
-   Keep exports and fingerprints outside the repository.
+5. Before any destructive production step, take a time-travel bookmark
+   (`cf d1 time-travel get-bookmark <prod-uuid>`, restore point if needed) and
+   a read-only fingerprint (`bun run db:fingerprint:prod --out
+   /tmp/prod-before.json`). The `cf` beta has no `d1 export` command.
+   D1 reads can lag across replicas: re-run any read that informs a decision
+   and trust the fingerprint/ledger over a single query.
+   Keep bookmarks and fingerprints outside the repository.
 
 ## Carry-over order
 
@@ -39,6 +47,24 @@ page renders and the fingerprint moved only by what was entered:
 5. Mail contacts worth keeping. Message history is not carried over: new mail
    dual-archives from step 4 of the prerequisites, and history stays readable
    in Convex until decommission.
+
+## Verified state 12 October 2026
+
+A read-only `convex export --prod` diffed field-by-field against live
+`summit-db` rows (same mapping as `scripts/import-convex-snapshot.mjs`) found
+**zero content deltas**: all content tables match by id and field, including
+`siteSettings` (1), `cmsEntries` (218), `programmeDays`/`programmeSessions`
+(3/21), `mediaItems` (34), `assets` (80), and `submissions` (12). The single
+`mailMessages` difference is the same inbound test mail stored under each
+store's own row id (dual-archive dedupes on `messageId`, so this is by
+design). No Admin-write carry-over was needed for content. `donations` /
+`donationTiers` exist only in Convex and are out of scope. New public-form
+submissions still land in Convex (Vercel prod is live) and converge at
+cutover.
+
+Still organiser-owned: `legal`, `statements`, and `homeBanners` rows are empty
+in **both** stores and must be authored through Admin (legal copy additionally
+needs organiser approval) — there is nothing to carry across.
 
 ## Fingerprint discipline
 
